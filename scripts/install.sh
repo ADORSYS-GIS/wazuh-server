@@ -165,9 +165,9 @@ installation() {
   if [ "$OS" = "Linux" ]; then
     maybe_sudo $PACKAGE_MANAGER update
     if [ $PACKAGE_MANAGER = "yum" ]; then
-        $PACKAGE_MANAGER install wazuh-agent-"$WAZUH_AGENT_VERSION"
+        $PACKAGE_MANAGER install -y wazuh-agent-"$WAZUH_AGENT_VERSION"
     else
-        $PACKAGE_MANAGER install wazuh-agent="$WAZUH_AGENT_VERSION"
+        $PACKAGE_MANAGER install -y wazuh-agent="$WAZUH_AGENT_VERSION"
     fi
   elif [ "$OS" = "macOS" ]; then
       # Detect architecture (Intel or Apple Silicon)
