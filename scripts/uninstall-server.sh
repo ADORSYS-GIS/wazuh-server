@@ -124,8 +124,8 @@ info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-agent.sh"
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-agent-status.sh"
+curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server.sh"
+curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server-status.sh"
 curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-yara.sh"
 
 # Always download both NIDS uninstallers
@@ -138,15 +138,15 @@ fi
 
 # Step 1: Uninstall Wazuh agent
 print_step 1 "Uninstalling Wazuh agent..."
-if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-agent.sh") 2>&1; then
-    error_message "Failed to uninstall wazuh-agent"
+if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-server.sh") 2>&1; then
+    error_message "Failed to uninstall wazuh-server"
     exit 1
 fi
 
-# Step 2: Uninstall wazuh-agent-status
-print_step 2 "Uninstalling wazuh-agent-status..."
-if ! (bash "$TMP_FOLDER/uninstall-wazuh-agent-status.sh") 2>&1; then
-    error_message "Failed to uninstall 'wazuh-agent-status'"
+# Step 2: Uninstall wazuh-server-status
+print_step 2 "Uninstalling wazuh-server-status..."
+if ! (bash "$TMP_FOLDER/uninstall-wazuh-server-status.sh") 2>&1; then
+    error_message "Failed to uninstall 'wazuh-server-status'"
     exit 1
 fi
 
