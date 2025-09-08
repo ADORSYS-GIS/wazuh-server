@@ -108,7 +108,7 @@ uninstall_agent() {
         info_message "Uninstalling Wazuh agent..."
         if [ "$OS" = "Linux" ]; then
             if [ "$PACKAGE_MANAGER" = "apt" ]; then
-                maybe_sudo apt remove --purge wazuh-agent -y
+                maybe_sudo apt remove -y wazuh-agent
                 maybe_sudo apt autoremove -y
             elif [ "$PACKAGE_MANAGER" = "yum" ]; then
                 maybe_sudo yum remove -y wazuh-agent
@@ -149,7 +149,6 @@ cleanup_repo() {
 # Clean up any remaining Wazuh files
 cleanup_files() { 
     if [ "$OS" = "Linux" ]; then
-        info_message "Cleaning up remaining Wazuh files"
         info_message "Cleaning up remaining Wazuh files"
         maybe_sudo rm -rf /var/ossec
         info_message "User and group cleanup completed."
