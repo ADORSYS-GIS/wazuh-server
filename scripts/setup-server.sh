@@ -207,8 +207,8 @@ info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
-curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/deps.sh" > "$TMP_FOLDER/install-deps.sh"
-curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
+curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/deps.sh" > "$TMP_FOLDER/install-deps.sh"
+curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
 curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-cert-oauth2.sh"
 curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-yara.sh"
 
