@@ -201,7 +201,7 @@ function Wait-ForInstallerCompletion {
             return $true
         }
         
-        InfoMessage "Installer still running... ($waitTime/$maxWait seconds)"
+        InfoMessage "Installer still running... ($($waitTime)/$($maxWait) seconds)"
         Start-Sleep -Seconds 5
         $waitTime += 5
     }
@@ -376,7 +376,7 @@ function Main {
             exit 1
         }
     } catch {
-        ErrorMessage "Script execution failed: $($_.Exception.Message)"
+        ErrorMessage "Script execution failed: $($($_.Exception.Message))"
         exit 1
     }
 }
