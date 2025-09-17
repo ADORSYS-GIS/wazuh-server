@@ -1,3 +1,5 @@
+# PowerShell script to install dependencies for Wazuh on Windows
+# This script installs Visual C++ Redistributable, GNU sed, curl, jq, and BurntToast module
 
 # Function to log messages with a timestamp
 function Log {
@@ -10,32 +12,26 @@ function Log {
     Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
 }
 
-
-
 # Logging helpers with colors
 function InfoMessage {
     param ([string]$Message)
     Log "[INFO]" $Message "White"
 }
 
-
 function WarnMessage {
     param ([string]$Message)
     Log "[WARNING]" $Message "Yellow"
 }
-
 
 function ErrorMessage {
     param ([string]$Message)
     Log "[ERROR]" $Message "Red"
 }
 
-
 function SuccessMessage {
     param ([string]$Message)
     Log "[SUCCESS]" $Message "Green"
 }
-
 
 function PrintStep {
     param (
@@ -45,7 +41,6 @@ function PrintStep {
     Log "[STEP]" "Step ${StepNumber}: $Message" "White"
 }
 
-
 # Exit script with an error message
 function ErrorExit {
     param ([string]$Message)
@@ -53,21 +48,18 @@ function ErrorExit {
     exit 1
 }
 
-
 function Ensure-Dependencies {
     InfoMessage "Ensuring dependencies are installed (curl, jq)"   
-
 
     # Check if curl is available
     if (-not (Get-Command curl -ErrorAction SilentlyContinue)) {
         InfoMessage "curl is not installed. Installing curl..."
-        Invoke-WebRequest -Uri "https://curl.se/windows/dl-7.79.1_2/curl-7.79.1_2-win64-mingw.zip" -OutFile "$TEMP_DIR\curl.zip"
-        Expand-Archive -Path "$TEMP_DIR\curl.zip" -DestinationPath "$TEMP_DIR\curl"
-        Move-Item -Path "$TEMP_DIR\curl\curl-7.79.1_2-win64-mingw\bin\curl.exe" -Destination "C:\Program Files\curl.exe"
-        Remove-Item -Path "$TEMP_DIR\curl.zip" -Recurse
-        Remove-Item -Path "$TEMP_DIR\curl" -Recurse
+        Invoke-WebRequest -Uri "https://curl.se/windows/dl-7.79.1_2/curl-7.79.1_2-win64-mingw.zip" -OutFile "$env:TEMP\curl.zip"
+        Expand-Archive -Path "$env:TEMP\curl.zip" -DestinationPath "$env:TEMP\curl"
+        Move-Item -Path "$env:TEMP\curl\curl-7.79.1_2-win64-mingw\bin\curl.exe" -Destination "C:\Program Files\curl.exe"
+        Remove-Item -Path "$env:TEMP\curl.zip" -Recurse
+        Remove-Item -Path "$env:TEMP\curl" -Recurse
         InfoMessage "curl installed successfully."
-
 
         # Add curl to the PATH environment variable
         $env:Path += ";C:\Program Files"
@@ -75,13 +67,11 @@ function Ensure-Dependencies {
         InfoMessage "curl added to PATH environment variable."
     }
 
-
     # Check if jq is available
     if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
         InfoMessage "jq is not installed. Installing jq..."
         Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe" -OutFile "C:\Program Files\jq.exe"
         InfoMessage "jq installed successfully."
-
 
         # Add jq to the PATH environment variable
         $env:Path += ";C:\Program Files"
@@ -91,11 +81,9 @@ function Ensure-Dependencies {
 }
 
 
-
 function Install-BurntToastModule {
     [CmdletBinding()]
     param()
-
 
     try {
         InfoMessage "[STEP 1/3] Checking NuGet provider installation..."
@@ -109,7 +97,6 @@ function Install-BurntToastModule {
             InfoMessage "NuGet provider installed successfully."
         }
 
-
         InfoMessage "[STEP 2/3] Checking BurntToast module installation..."
         # Check if the BurntToast module is already installed.
         if (Get-Module -ListAvailable -Name BurntToast -ErrorAction SilentlyContinue) {
@@ -120,7 +107,6 @@ function Install-BurntToastModule {
             Install-Module -Name BurntToast -Force -Confirm:$false -ErrorAction Stop
             InfoMessage "Module 'BurntToast' installed successfully."
         }
-
 
         InfoMessage "[STEP 3/3] Importing BurntToast module..."
         # Import the BurntToast module to ensure commands like New-BurntToastNotification are recognized.
@@ -134,180 +120,99 @@ function Install-BurntToastModule {
     }
 }
 
-
-
-
-
-
-function Install-GnuSed {
-    <#
-    .SYNOPSIS
-        Downloads and installs GNU sed for Windows using portable version.
-    
-    .DESCRIPTION
-        This function downloads the GNU sed portable binaries and installs them silently
-        without requiring GUI interaction. Uses portable binaries for headless compatibility.
-        This is an optional dependency - installation will continue if sed fails.
-    
-    .EXAMPLE
-        Install-GnuSed
-    #>
-    
-    InfoMessage "=== Installing GNU sed (Portable) - Optional Dependency ==="
-    
-    # Define URLs and paths for portable version with dependencies
-    $BinUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-bin.zip/download"
-    $DepUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-dep.zip/download"
-    $BinPath = "$env:TEMP\sed-4.2.1-bin.zip"
-    $DepPath = "$env:TEMP\sed-4.2.1-dep.zip"
-    $InstallPath = "$env:ProgramFiles\GnuWin32"
-    
-    InfoMessage "[STEP 1/5] Checking if GNU sed is already installed..."
-    
-    # Check if sed is already available in PATH
+function Install-Chocolatey {
     try {
-        $sedVersion = & sed --version 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            InfoMessage "GNU sed is already installed and available in PATH"
-            InfoMessage "Version info: $($sedVersion[0])"
-            return $true
-        }
-    }
-    catch {
-        InfoMessage "GNU sed not found in PATH, proceeding with installation..."
-    }
-    
-    try {
-        # Download the portable binaries and dependencies using BITS
-        InfoMessage "[STEP 2/5] Downloading GNU sed binaries and dependencies..."
-        InfoMessage "Downloading binaries to $BinPath..."
-        Start-BitsTransfer -Source $BinUrl -Destination $BinPath -ErrorAction Stop
-        InfoMessage "Binaries download completed. File size: $((Get-Item $BinPath).Length) bytes"
+        InfoMessage "Chocolatey not found. Installing Chocolatey..."
         
-        InfoMessage "Downloading dependencies to $DepPath..."
-        Start-BitsTransfer -Source $DepUrl -Destination $DepPath -ErrorAction Stop
-        InfoMessage "Dependencies download completed. File size: $((Get-Item $DepPath).Length) bytes"
-
-        InfoMessage "[STEP 3/5] Extracting and installing binaries and dependencies..."
+        # Set execution policy for current process
+        Set-ExecutionPolicy Bypass -Scope Process -Force
         
-        # Create installation directory
-        if (-not (Test-Path $InstallPath)) {
-            New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
-            InfoMessage "Created installation directory: $InstallPath"
-        }
+        # Download and install Chocolatey
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         
-        # Extract both ZIP files
-        try {
-            Add-Type -AssemblyName System.IO.Compression.FileSystem
-            InfoMessage "Extracting binaries..."
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($BinPath, $InstallPath)
-            InfoMessage "Extracting dependencies..."
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($DepPath, $InstallPath)
-            InfoMessage "Binaries and dependencies extracted successfully to $InstallPath"
-        }
-        catch {
-            # Fallback to PowerShell 5.0+ Expand-Archive
-            InfoMessage "Using Expand-Archive fallback..."
-            Expand-Archive -Path $BinPath -DestinationPath $InstallPath -Force
-            Expand-Archive -Path $DepPath -DestinationPath $InstallPath -Force
-            InfoMessage "Binaries and dependencies extracted successfully using Expand-Archive"
-        }
-
-        InfoMessage "[STEP 4/5] Configuring PATH and verifying installation..."
-        
-        # Add GNU sed to PATH
-        $gnuSedBinPath = "$InstallPath\bin"
-        if (Test-Path $gnuSedBinPath) {
-            $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-            if ($currentPath -notlike "*$gnuSedBinPath*") {
-                InfoMessage "Adding GNU sed to system PATH: $gnuSedBinPath"
-                [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$gnuSedBinPath", "Machine")
-                $env:PATH = "$env:PATH;$gnuSedBinPath"
-            }
-        } else {
-            ErrorMessage "GNU sed bin directory not found at: $gnuSedBinPath"
-            return $false
-        }
+        # Refresh environment variables
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
         
         # Verify installation
-        try {
-            # First try with updated PATH in current session
-            $sedExe = "$gnuSedBinPath\sed.exe"
-            if (Test-Path $sedExe) {
-                $sedVersion = & $sedExe --version 2>$null
-                if ($LASTEXITCODE -eq 0) {
-                    InfoMessage "GNU sed installation verified successfully"
-                    InfoMessage "Version: $($sedVersion[0])"
-                } else {
-                    # Try with direct path if PATH verification fails
-                    InfoMessage "GNU sed binaries installed successfully at: $gnuSedBinPath"
-                    InfoMessage "Note: You may need to restart your terminal for PATH changes to take effect."
-                }
-            } else {
-                ErrorMessage "GNU sed executable not found at: $sedExe"
-                return $false
-            }
-        } catch {
-            # If command fails, check if files exist
-            if (Test-Path "$gnuSedBinPath\sed.exe") {
-                InfoMessage "GNU sed binaries installed successfully at: $gnuSedBinPath"
-                InfoMessage "Note: You may need to restart your terminal for PATH changes to take effect."
-            } else {
-                ErrorMessage "GNU sed installation verification failed: $_"
-                return $false
-            }
+        if (Get-Command choco -ErrorAction SilentlyContinue) {
+            SuccessMessage "Chocolatey installed successfully"
+            return $true
+        } else {
+            ErrorMessage "Chocolatey installation verification failed"
+            return $false
         }
-
-        InfoMessage "[STEP 5/5] Cleaning up installer files..."
-        
-        # Clean up both ZIP files
-        try {
-            Remove-Item $BinPath -Force -ErrorAction Stop
-            Remove-Item $DepPath -Force -ErrorAction Stop
-            InfoMessage "Installer files cleaned up successfully"
-        }
-        catch {
-            WarningMessage "Could not clean up installer files: $_"
-        }
-        
-        InfoMessage "GNU sed portable installation completed successfully!"
-        return $true
-        
-    }
-    catch {
-        WarningMessage "GNU sed installation failed: $_"
-        WarningMessage "This is an optional dependency. Continuing with installation..."
-        
-        # Clean up on failure
-        if (Test-Path $BinPath) {
-            try {
-                Remove-Item $BinPath -Force
-                InfoMessage "Cleaned up failed binaries file"
-            }
-            catch {
-                WarningMessage "Could not clean up failed binaries file: $_"
-            }
-        }
-        if (Test-Path $DepPath) {
-            try {
-                Remove-Item $DepPath -Force
-                InfoMessage "Cleaned up failed dependencies file"
-            }
-            catch {
-                WarningMessage "Could not clean up failed dependencies file: $_"
-            }
-        }
-        
-        # Return true to continue installation since sed is optional
-        InfoMessage "GNU sed installation skipped due to network/download issues"
-        return $true
+    } catch {
+        ErrorMessage "Failed to install Chocolatey: $($_.Exception.Message)"
+        return $false
     }
 }
 
+function Install-GnuSed {
+    # Define a test command to check if GNU sed is installed
+    $TestCommand = "sed --version"
 
+    try {
+        # Check if GNU sed is already installed
+        InfoMessage "[STEP 1/4] Checking if GNU sed is already installed..."
+        $versionOutput = & cmd /c $TestCommand 2>&1
+        if ($versionOutput -match "GNU sed") {
+            InfoMessage "GNU sed is already installed. Version: $($versionOutput -split '\n' | Select-Object -First 1)" 
+            return $true
+        }
+    } catch {
+        InfoMessage "GNU sed is not installed. Proceeding with Chocolatey installation..." 
+    }
 
+    try {
+        # Check if Chocolatey is available, install if needed
+        InfoMessage "[STEP 2/4] Checking Chocolatey availability..."
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            InfoMessage "Chocolatey not found. Installing Chocolatey first..."
+            if (-not (Install-Chocolatey)) {
+                ErrorMessage "Failed to install Chocolatey. Cannot proceed with GNU sed installation."
+                return $false
+            }
+        } else {
+            InfoMessage "Chocolatey is available"
+        }
+        
+        # Install sed using Chocolatey (silent by default)
+        InfoMessage "[STEP 3/4] Installing GNU sed via Chocolatey..."
+        $chocoProcess = Start-Process -FilePath "choco" -ArgumentList "install", "sed", "-y" -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        
+        if ($chocoProcess.ExitCode -eq 0) {
+            InfoMessage "GNU sed installed successfully via Chocolatey"
+        } else {
+            ErrorMessage "Chocolatey sed installation failed with exit code: $($chocoProcess.ExitCode)"
+            return $false
+        }
 
-
+        InfoMessage "[STEP 4/4] Verifying GNU sed installation..."
+        # Refresh environment variables
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        
+        # Final verification
+        try {
+            $finalTest = & cmd /c "sed --version" 2>&1
+            if ($finalTest -match "GNU sed") {
+                SuccessMessage "GNU sed installation completed and verified successfully."
+                return $true
+            } else {
+                ErrorMessage "GNU sed installation verification failed."
+                return $false
+            }
+        } catch {
+            ErrorMessage "GNU sed installation verification failed: $($_.Exception.Message)"
+            return $false
+        }
+        
+    } catch {
+        # Catch and display any errors
+        ErrorMessage "GNU sed installation failed: $($_.Exception.Message)" 
+        return $false
+    }
+}
 
 # Function to check if Visual C++ Redistributable is installed
 function Install-VCppRedistributable {
@@ -363,17 +268,11 @@ function Install-VCppRedistributable {
     }
 }
 
-
-
-
-
 # Main execution with proper error handling and exit codes
 $overallSuccess = $true
 
-
 InfoMessage "Starting dependency installation process..."
 InfoMessage "=" * 60
-
 
 # Install Visual C++ Redistributable
 InfoMessage "Installing Visual C++ Redistributable..."
@@ -382,20 +281,16 @@ if (-not (Install-VCppRedistributable)) {
     $overallSuccess = $false
 }
 
-
 InfoMessage "=" * 60
 
-
-# Install GNU sed (optional dependency)
+# Install GNU sed
 InfoMessage "Installing GNU sed..."
 if (-not (Install-GnuSed)) {
-    WarningMessage "GNU sed installation failed, but this is optional. Continuing..."
-    # Don't set $overallSuccess = $false since sed is optional
+    ErrorMessage "GNU sed installation failed."
+    $overallSuccess = $false
 }
 
-
 InfoMessage "=" * 60
-
 
 # Ensure other dependencies (curl, jq)
 InfoMessage "Ensuring additional dependencies (curl, jq)..."
@@ -407,9 +302,7 @@ try {
     $overallSuccess = $false
 }
 
-
 InfoMessage "=" * 60
-
 
 # Install BurntToast module
 InfoMessage "Installing BurntToast PowerShell module..."
@@ -418,9 +311,7 @@ if (-not (Install-BurntToastModule)) {
     $overallSuccess = $false
 }
 
-
 InfoMessage "=" * 60
-
 
 # Final status and exit
 if ($overallSuccess) {
@@ -431,5 +322,3 @@ if ($overallSuccess) {
     ErrorMessage "One or more dependency installations failed. Please check the logs above for details."
     exit 1
 }
-
-
