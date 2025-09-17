@@ -166,8 +166,11 @@ installation() {
     maybe_sudo $PACKAGE_MANAGER update
     if [ $PACKAGE_MANAGER = "yum" ]; then
         $PACKAGE_MANAGER install -y wazuh-agent-"$WAZUH_AGENT_VERSION"
-    else
+    elif [ $PACKAGE_MANAGER = "apt" ]; then
         $PACKAGE_MANAGER install -y wazuh-agent="$WAZUH_AGENT_VERSION"
+    else
+        error_message "Unsupported package manager: $PACKAGE_MANAGER"
+        exit 1
     fi
   elif [ "$OS" = "macOS" ]; then
       # Detect architecture (Intel or Apple Silicon)
@@ -320,7 +323,7 @@ config() {
     fi
   
     # Delete REGISTRATION_SERVER_ADDRESS if it exists
-    if ! maybe_sudo grep -q "<manager_address>.*</manager_address>" "$OSSEC_CONF_PATH"; then
+    if maybe_sudo grep -q "<manager_address>.*</manager_address>" "$OSSEC_CONF_PATH"; then
         # First remove <address till address>
         maybe_sudo sed_alternative -i '/<manager_address>.*<\/manager_address>/d' "$OSSEC_CONF_PATH" || {
             error_message "Error occurred during old manager address removal."
@@ -449,14 +452,12 @@ else
     else
         info_message "Upgrading Wazuh agent ($INSTALLED_VERSION → $WAZUH_AGENT_VERSION)..."
     fi
-    # Start the installation process
     import_keys
     enable_repo
     installation
     disable_repo
 fi
-# Always update config/scripts
+
 config
 start_agent 
 validate_installation
-# End of script
