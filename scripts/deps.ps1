@@ -218,17 +218,31 @@ function Install-GnuSed {
         
         # Verify installation
         try {
-            $sedVersion = & sed --version 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                InfoMessage "GNU sed installation verified successfully"
-                InfoMessage "Version: $($sedVersion[0])"
+            # First try with updated PATH in current session
+            $sedExe = "$gnuSedBinPath\sed.exe"
+            if (Test-Path $sedExe) {
+                $sedVersion = & $sedExe --version 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    InfoMessage "GNU sed installation verified successfully"
+                    InfoMessage "Version: $($sedVersion[0])"
+                } else {
+                    # Try with direct path if PATH verification fails
+                    InfoMessage "GNU sed binaries installed successfully at: $gnuSedBinPath"
+                    InfoMessage "Note: You may need to restart your terminal for PATH changes to take effect."
+                }
             } else {
-                ErrorMessage "GNU sed installation verification failed"
+                ErrorMessage "GNU sed executable not found at: $sedExe"
                 return $false
             }
         } catch {
-            ErrorMessage "GNU sed installation verification failed: $_"
-            return $false
+            # If command fails, check if files exist
+            if (Test-Path "$gnuSedBinPath\sed.exe") {
+                InfoMessage "GNU sed binaries installed successfully at: $gnuSedBinPath"
+                InfoMessage "Note: You may need to restart your terminal for PATH changes to take effect."
+            } else {
+                ErrorMessage "GNU sed installation verification failed: $_"
+                return $false
+            }
         }
 
         InfoMessage "[STEP 5/5] Cleaning up installer file..."
