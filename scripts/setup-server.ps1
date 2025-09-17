@@ -278,13 +278,13 @@ try {
     
     SuccessMessage "=== COMPLETE Wazuh Agent Setup Completed Successfully ==="
     InfoMessage "All components installed and configured:"
-    InfoMessage "  ✓ Dependencies (curl, jq, chocolatey, etc.)"
-    InfoMessage "  ✓ Wazuh Agent with silent installation"
-    InfoMessage "  ✓ OAuth2 Certificate Authentication"
-    InfoMessage "  ✓ YARA malware detection engine"
-    InfoMessage "  ✓ Agent Status monitoring"
-    InfoMessage "  ✓ Suricata IDS with automated Npcap (no GUI)"
-    InfoMessage "  ✓ All services configured for automatic startup"
+    InfoMessage "  [+] Dependencies (curl, jq, chocolatey, etc.)"
+    InfoMessage "  [+] Wazuh Agent with silent installation"
+    InfoMessage "  [+] OAuth2 Certificate Authentication"
+    InfoMessage "  [+] YARA malware detection engine"
+    InfoMessage "  [+] Agent Status monitoring"
+    InfoMessage "  [+] Suricata IDS with automated Npcap (no GUI)"
+    InfoMessage "  [+] All services configured for automatic startup"
 }
 catch {
     ErrorMessage "Setup failed: $($_.Exception.Message)"
