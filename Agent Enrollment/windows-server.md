@@ -1,5 +1,5 @@
-# Windows enrollment Guide
- This guide walks you through the process of enrolling a Windows system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent and the Wazuh Manager.
+# Windows Server Enrollment Guide
+ This guide walks you through the process of enrolling a Windows Server system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent and the Wazuh Manager.
 
  ### Prerequisites
 
@@ -23,62 +23,38 @@ When prompted, respond with A [Yes to All], to enable the execution policy.
    
 ```powershell
 $env:WAZUH_MANAGER = "manager.wazuh.adorsys.team"
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/setup-agent.ps1' `
-  -UseBasicParsing -OutFile "$env:TEMP\setup-agent.ps1"; `
-& "$env:TEMP\setup-agent.ps1" 
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/setup-server.ps1' `
+  -UseBasicParsing -OutFile "$env:TEMP\setup-server.ps1"; `
+& "$env:TEMP\setup-server.ps1" 
 ```
 
 **NB:** You have other components that can be installed from this script, to know of them and how to install then run this command
 ```powershell
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/setup-agent.ps1' `
-  -UseBasicParsing -OutFile "$env:TEMP\setup-agent.ps1"; `
-& "$env:TEMP\setup-agent.ps1" -Help
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/setup-server.ps1' `
+  -UseBasicParsing -OutFile "$env:TEMP\setup-server.ps1"; `
+& "$env:TEMP\setup-server.ps1" -Help
 ```
 
-### Step 2: Gnu Sed Installation
+### Step 2: Silent Installation Process
 
-In the dependency intallation a pop-up running the GNU sed installation will show.
+**Note:** This installation is now fully automated and silent - no GUI interactions are required!
 
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-11.png">
+The script will automatically install all dependencies including GNU sed, without any pop-ups or user interaction required. This is perfect for Windows Server environments.
 
-
-**Please choose the options shown in the images below to install GNU sed**
-
-   #### i. In order for installation to begin you need to accepts GNU's license agreement
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-16.png">
-
-   #### ii. Please install sed in the default location (C:\Program Files (x86)\GnuWin32)
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-20.png">
-
-   #### iii. Select Full Installation on the drop down with both binaries and documentation selected
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-24.png">
-
-   #### iv. Please select next
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-28.png">
-
-   #### v. Please uncheck both addition icon options
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-20 13-47-35.png">
-
-   #### vi. The GNU Sed installation is now finished.
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-21 16-29-27.png">
-
-**The Installation will now continue**
+**The Installation will continue automatically**
    <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-36-39.png">
 
 
-### Step 3: Snort Installation
+### Step 3: Suricata and Npcap Installation
 
-For Snort A POP-UP window will come up to perform the installation.
-   Please follow these steps:
+**Note:** Suricata and Npcap installation is now fully automated!
 
-   #### i. Snort has been installed. Please click OK to continue installation and install Npcap.
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-35-09.png">
-   
-   #### ii. Please click Finish once Npcap installation is complete.
+The script will automatically install Suricata IDS and Npcap without any GUI interactions. The installation includes:
+- Automated Npcap installation (no manual clicks required)
+- Silent Suricata configuration
+- Automatic service registration
 
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-35-15.png">
-
-   #### iii. Installation will now continue:
+   #### Installation will continue automatically:
 
    <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-39-23.png">
 
@@ -181,20 +157,10 @@ This is a **very** important step, the installation will not work well if this s
 
    <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-39-01.png">
 
-   **6. Snort:**
+   **6. Suricata:**
    Adds network intrusion detection capabilities to monitor suspicious traffic.
 
-   For Snort A POP-UP window will come up to perform the installation.
-   Please follow these steps:
-
-   i. Snort has been installed. Please click OK to continue installation and install Npcap.Setup agent script defaults wazuh manager to: events.dev.wazuh.adorsys.team
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-35-09.png">
-   
-   v. Please click Finish once Npcap installation is complete.
-
-   <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-35-15.png">
-
-   vi. Installation will now continue:
+   **Note:** Suricata installation is now fully automated with silent Npcap installation - no user interaction required!
 
    <img src="/Agent Enrollment/images/windows/Screenshot from 2025-01-07 13-39-23.png">
 
@@ -204,9 +170,9 @@ This is a **very** important step, the installation will not work well if this s
    yara64 -v
    ``` 
     
-   - Snort
+   - Suricata
    ```powershell
-   snort -V
+   suricata --version
    ```
    - Agent Status
    ```powershell
@@ -242,11 +208,11 @@ Should you need to uninstall the Wazuh agent, follow these steps:
    Download the uninstall script from the repository and run it to remove the Wazuh agent and its components.
    
 ```powershell
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/refs/heads/main/scripts/uninstall-agent.ps1' `
-  -UseBasicParsing -OutFile "$env:TEMP\uninstall-agent.ps1"; `
-& "$env:TEMP\uninstall-agent.ps1" -UninstallSnort
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/uninstall-server.ps1' `
+  -UseBasicParsing -OutFile "$env:TEMP\uninstall-server.ps1"; `
+& "$env:TEMP\uninstall-server.ps1" -UninstallSuricata
 ```
-  **NB:** Use the `-UninstallSnort` option for **Snort** or the `-UninstallSuricata` for **Suricata**. For Suricata, you do not need to specify a mode; the uninstall script will remove all Suricata components regardless of mode.
+  **NB:** Use the `-UninstallSuricata` option for **Suricata**. The uninstall script will remove all Suricata components and Npcap.
 
 - Reboot the user's machine
 
