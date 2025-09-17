@@ -24,7 +24,6 @@ $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 $TEMP_DIR = [System.IO.Path]::GetTempPath()
 $WAZUH_YARA_VERSION = if ($env:WAZUH_YARA_VERSION) { $env:WAZUH_YARA_VERSION } else { "0.3.11" }
 $WAZUH_SNORT_VERSION = if ($env:WAZUH_SNORT_VERSION) { $env:WAZUH_SNORT_VERSION } else { "0.2.4" }
-$WAZUH_AGENT_STATUS_VERSION = if ($env:WAZUH_AGENT_STATUS_VERSION) { $env:WAZUH_AGENT_STATUS_VERSION } else { "0.3.3" }
 $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
 $WAZUH_SURICATA_VERSION = if ($env:WAZUH_SURICATA_VERSION) { $env:WAZUH_SURICATA_VERSION } else { "0.1.4" }
 
@@ -159,24 +158,6 @@ function Install-Yara {
     }
 }
 
-# Step 5: Download and install Wazuh Agent Status with error handling
-function Install-AgentStatus {
-    $AgentStatusUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/install.ps1"
-    $AgentStatusScript = "$env:TEMP\install-agent-status.ps1"
-    $global:InstallerFiles += $AgentStatusScript
-
-    try {
-        InfoMessage "Downloading and executing Wazuh Agent Status installation script..."
-        Invoke-WebRequest -Uri $AgentStatusUrl -OutFile $AgentStatusScript -ErrorAction Stop
-        InfoMessage "Agent Status installation script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $AgentStatusScript -ErrorAction Stop
-        SuccessMessage "Agent Status installed successfully"
-    }
-    catch {
-        ErrorMessage "Error during Agent Status installation: $($_.Exception.Message)"
-        throw
-    }
-}
 
 # Step 6: Download and execute Silent Suricata installation (includes Npcap)
 function Install-SuricataWithNpcap {
@@ -222,7 +203,7 @@ function Show-Help {
     Write-Host "  - Wazuh Agent - SILENT" -ForegroundColor Cyan
     Write-Host "  - OAuth2 Certificate Authentication - SILENT" -ForegroundColor Cyan
     Write-Host "  - YARA malware detection - SILENT" -ForegroundColor Cyan
-    Write-Host "  - Wazuh Agent Status monitoring - SILENT" -ForegroundColor Cyan
+    Write-Host "" -ForegroundColor Cyan
     Write-Host "  - Suricata IDS with automated Npcap - SILENT" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
@@ -235,7 +216,7 @@ function Show-Help {
     Write-Host "  WAZUH_AGENT_VERSION: Sets the Wazuh Agent version. Default: 4.12.0-1" -ForegroundColor Cyan
     Write-Host "  WAZUH_YARA_VERSION : Sets the Wazuh YARA module version. Default: 0.3.11" -ForegroundColor Cyan
     Write-Host "  WAZUH_SURICATA_VERSION: Sets the Wazuh Suricata module version. Default: 0.1.4" -ForegroundColor Cyan
-    Write-Host "  WAZUH_AGENT_STATUS_VERSION: Sets the Wazuh Agent Status module version. Default: 0.3.3" -ForegroundColor Cyan
+    Write-Host "" -ForegroundColor Cyan
     Write-Host "  WOPS_VERSION       : Sets the WOPS client version. Default: 0.2.18" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
@@ -253,7 +234,7 @@ if ($Help) {
 # Main Execution wrapped in a try-finally to ensure cleanup runs even if errors occur.
 try {
     InfoMessage "=== COMPLETE Wazuh Agent Setup for Silent Windows Server Environments ==="
-    InfoMessage "Installing: Dependencies + Wazuh Agent + OAuth2 Auth + YARA + Server Status + Suricata + Npcap"
+    InfoMessage "Installing: Dependencies + Wazuh Agent + OAuth2 Auth + YARA + Suricata + Npcap"
     
     SectionSeparator "Installing Dependencies"
     Install-Dependencies
@@ -263,9 +244,6 @@ try {
     
     SectionSeparator "Installing OAuth2 Certificate Authentication"
     Install-OAuth2Client
-    
-    SectionSeparator "Installing Agent Status Monitoring"
-    Install-AgentStatus
     
     SectionSeparator "Installing YARA Malware Detection"
     Install-Yara
@@ -282,7 +260,6 @@ try {
     InfoMessage "  [+] Wazuh Agent with silent installation"
     InfoMessage "  [+] OAuth2 Certificate Authentication"
     InfoMessage "  [+] YARA malware detection engine"
-    InfoMessage "  [+] Agent Status monitoring"
     InfoMessage "  [+] Suricata IDS with automated Npcap (no GUI)"
     InfoMessage "  [+] All services configured for automatic startup"
 }

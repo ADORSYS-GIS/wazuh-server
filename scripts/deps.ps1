@@ -1,5 +1,5 @@
 # PowerShell script to install dependencies for Wazuh on Windows
-# This script installs Visual C++ Redistributable, GNU sed, curl, jq, and BurntToast module
+# This script installs Visual C++ Redistributable, GNU sed, curl, and jq
 
 # Function to log messages with a timestamp
 function Log {
@@ -304,12 +304,7 @@ try {
 
 InfoMessage "=" * 60
 
-# Install BurntToast module
-InfoMessage "Installing BurntToast PowerShell module..."
-if (-not (Install-BurntToastModule)) {
-    ErrorMessage "BurntToast module installation failed."
-    $overallSuccess = $false
-}
+# BurntToast module removed - not needed for silent server installation
 
 InfoMessage "=" * 60
 
