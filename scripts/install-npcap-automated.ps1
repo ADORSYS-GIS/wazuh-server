@@ -1,5 +1,5 @@
-# Automated Npcap Installation using SendKeys
-# This script uses keyboard automation to interact with the Npcap installer
+# Fast Automated Npcap Installation using SendKeys
+# Optimized version with reduced wait times for Windows Server environments
 # Designed for headless Windows Server environments where GUI interaction is required
 
 # Requires Administrator privileges
@@ -7,13 +7,14 @@
 
 Add-Type -AssemblyName System.Windows.Forms
 
-# Global configuration
+# Global configuration - OPTIMIZED TIMINGS
 $global:NpcapConfig = @{
     TempDir = "C:\Temp"
     InstallerUrl = "https://npcap.com/dist/npcap-1.79.exe"
     InstallerPath = "C:\Temp\npcap-1.79.exe"
     InstallPath = "C:\Program Files\Npcap"
-    MaxWaitTime = 120  # Maximum wait time in seconds
+    MaxWaitTime = 45  # Reduced from 120 to 45 seconds
+    PollInterval = 2  # Reduced from 5 to 2 seconds
 }
 
 # Logging functions with colors
@@ -47,11 +48,11 @@ function SuccessMessage {
     Log "[SUCCESS]" $Message "Green"
 }
 
-# Helper function to send keyboard input with delay
+# OPTIMIZED: Helper function to send keyboard input with reduced delay
 function Send-KeysToWindow {
     param(
         [string]$Keys, 
-        [int]$DelayMs = 500
+        [int]$DelayMs = 200  # Reduced from 500 to 200ms
     )
     Start-Sleep -Milliseconds $DelayMs
     try {
@@ -61,6 +62,28 @@ function Send-KeysToWindow {
     catch {
         WarnMessage "Failed to send keys: $Keys - $_"
     }
+}
+
+# OPTIMIZED: Smart window detection
+function Wait-ForWindow {
+    param(
+        [string]$WindowTitle = "*npcap*",
+        [int]$MaxWaitSeconds = 10  # Reduced from implied longer waits
+    )
+    
+    $waited = 0
+    while ($waited -lt $MaxWaitSeconds) {
+        $windows = Get-Process | Where-Object { $_.MainWindowTitle -like $WindowTitle }
+        if ($windows.Count -gt 0) {
+            InfoMessage "Found installer window after $waited seconds"
+            return $true
+        }
+        Start-Sleep -Milliseconds 500
+        $waited += 0.5
+    }
+    
+    WarnMessage "No installer window found after $MaxWaitSeconds seconds"
+    return $false
 }
 
 # Ensure temp directory exists
@@ -82,6 +105,9 @@ function Download-NpcapInstaller {
     
     InfoMessage "Downloading Npcap installer from $($global:NpcapConfig.InstallerUrl)..."
     try {
+        # Set TLS protocols for download (learned from our earlier fix)
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+        
         Invoke-WebRequest -Uri $global:NpcapConfig.InstallerUrl -OutFile $installerPath -UseBasicParsing -ErrorAction Stop
         
         if (Test-Path $installerPath) {
@@ -181,12 +207,13 @@ function Verify-NpcapInstallation {
     return $allPassed
 }
 
-# Wait for installer processes to complete
+# OPTIMIZED: Wait for installer processes to complete with faster polling
 function Wait-ForInstallerCompletion {
     InfoMessage "Waiting for Npcap installer to complete..."
     
     $waitTime = 0
     $maxWait = $global:NpcapConfig.MaxWaitTime
+    $pollInterval = $global:NpcapConfig.PollInterval
     
     while ($waitTime -lt $maxWait) {
         # Check for Npcap installer processes
@@ -202,8 +229,8 @@ function Wait-ForInstallerCompletion {
         }
         
         InfoMessage "Installer still running... ($($waitTime)/$($maxWait) seconds)"
-        Start-Sleep -Seconds 5
-        $waitTime += 5
+        Start-Sleep -Seconds $pollInterval
+        $waitTime += $pollInterval
     }
     
     WarnMessage "Timeout reached while waiting for installer completion"
@@ -227,9 +254,9 @@ function Stop-InstallerProcesses {
     }
 }
 
-# Perform automated Npcap installation with retry logic
+# OPTIMIZED: Perform automated Npcap installation with faster timings
 function Install-NpcapAutomated {
-    InfoMessage "Starting automated Npcap installation..."
+    InfoMessage "Starting FAST automated Npcap installation..."
     
     # Enhanced detection with cleanup
     if (Test-NpcapInstalled) {
@@ -250,46 +277,49 @@ function Install-NpcapAutomated {
         return $false
     }
     
-    InfoMessage "Starting Npcap installer with keyboard automation..."
-    InfoMessage "This will automatically navigate through the installer using SendKeys"
+    InfoMessage "Starting Npcap installer with OPTIMIZED keyboard automation..."
+    InfoMessage "This will automatically navigate through the installer using SendKeys with reduced delays"
     
     try {
         # Start the installer process
         $process = Start-Process -FilePath $installerPath -PassThru -ErrorAction Stop
         InfoMessage "Npcap installer started (PID: $($process.Id))"
         
-        # Wait for installer window to appear and stabilize
+        # OPTIMIZED: Wait for installer window with smart detection
         InfoMessage "Waiting for installer window to load..."
-        Start-Sleep -Seconds 8
+        if (-not (Wait-ForWindow -WindowTitle "*npcap*" -MaxWaitSeconds 5)) {
+            # Fallback: shorter generic wait
+            Start-Sleep -Seconds 3
+        }
         
-        # Step 1: Accept license agreement (Alt+A or Enter)
+        # Step 1: Accept license agreement (Alt+A or Enter) - FASTER
         InfoMessage "Step 1: Accepting license agreement..."
-        Send-KeysToWindow -Keys "%a" -DelayMs 1000  # Alt+A for "I Agree"
-        Start-Sleep -Seconds 2
+        Send-KeysToWindow -Keys "%a" -DelayMs 300  # Reduced delay
+        Start-Sleep -Milliseconds 800  # Reduced from 2 seconds
         
         # Fallback: Try Enter if Alt+A doesn't work
-        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000
-        Start-Sleep -Seconds 3
+        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 300
+        Start-Sleep -Milliseconds 1200  # Reduced from 3 seconds
         
-        # Step 2: Navigate through options (use default settings)
+        # Step 2: Navigate through options (use default settings) - FASTER
         InfoMessage "Step 2: Proceeding with default options..."
-        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000  # Next button
-        Start-Sleep -Seconds 4
+        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 300  # Next button
+        Start-Sleep -Milliseconds 1500  # Reduced from 4 seconds
         
-        # Step 3: Start installation
+        # Step 3: Start installation - FASTER
         InfoMessage "Step 3: Starting installation..."
-        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000  # Install button
-        Start-Sleep -Seconds 3
+        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 300  # Install button
+        Start-Sleep -Milliseconds 1000  # Reduced from 3 seconds
         
-        # Step 4: Handle any additional prompts
+        # Step 4: Handle any additional prompts - FASTER
         InfoMessage "Step 4: Handling installation prompts..."
-        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000  # Continue/Next
-        Start-Sleep -Seconds 2
+        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 300  # Continue/Next
+        Start-Sleep -Milliseconds 800  # Reduced from 2 seconds
         
-        # Step 5: Complete installation
+        # Step 5: Complete installation - FASTER
         InfoMessage "Step 5: Completing installation..."
-        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000  # Finish button
-        Start-Sleep -Seconds 2
+        Send-KeysToWindow -Keys "{ENTER}" -DelayMs 300  # Finish button
+        Start-Sleep -Milliseconds 800  # Reduced from 2 seconds
         
         # Wait for installation to complete
         $completed = Wait-ForInstallerCompletion
@@ -299,9 +329,9 @@ function Install-NpcapAutomated {
             Stop-InstallerProcesses
         }
         
-        # Enhanced verification with comprehensive checks
+        # OPTIMIZED: Enhanced verification with reduced wait time
         InfoMessage "Waiting for installation to complete..."
-        Start-Sleep -Seconds 10  # Allow more time for files to be written
+        Start-Sleep -Seconds 3  # Reduced from 10 seconds
         
         if (Verify-NpcapInstallation) {
             SuccessMessage "Npcap installation completed and verified successfully!"
@@ -350,7 +380,7 @@ function Install-NpcapWithRetry {
         if ($attempt -lt $maxRetries) {
             WarnMessage "Installation failed. Cleaning up and retrying..."
             Remove-PartialNpcapInstallation
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 3  # Reduced from 10 seconds
         }
     }
     
@@ -360,9 +390,9 @@ function Install-NpcapWithRetry {
 
 # Main execution
 function Main {
-    InfoMessage "=== Automated Npcap Installation Script ==="
-    InfoMessage "This script will install Npcap using keyboard automation"
-    InfoMessage "Designed for headless Windows Server environments with enhanced detection"
+    InfoMessage "=== FAST Automated Npcap Installation Script ==="
+    InfoMessage "This OPTIMIZED script will install Npcap using keyboard automation with reduced wait times"
+    InfoMessage "Designed for headless Windows Server environments with enhanced detection and faster execution"
     
     try {
         $result = Install-NpcapWithRetry
