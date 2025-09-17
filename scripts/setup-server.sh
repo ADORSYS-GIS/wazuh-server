@@ -106,7 +106,7 @@ if ! (maybe_sudo env LOG_LEVEL="$LOG_LEVEL" OSSEC_CONF_PATH=$OSSEC_CONF_PATH WAZ
     exit 1
 fi
 
-# Step 6: Install Trivy if the flag is set
+# Step 2: Install Trivy if the flag is set
 if [ "$INSTALL_TRIVY" = "TRUE" ]; then
     info_message "Installing Trivy..."
     curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/install.sh" > "$TMP_FOLDER/install-trivy.sh"
@@ -116,7 +116,7 @@ if [ "$INSTALL_TRIVY" = "TRUE" ]; then
     fi
 fi
 
-# Step 7: Download version file
+# Step 3: Download version file
 info_message "Downloading version file..."
 if ! (maybe_sudo curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/version.txt" -o "$OSSEC_PATH/version.txt") 2>&1; then
     error_message "Failed to download version file"

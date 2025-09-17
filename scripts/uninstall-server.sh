@@ -11,11 +11,6 @@ fi
 # Default Configuration
 # ==============================================================================
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
-WOPS_VERSION=${WOPS_VERSION:-"0.2.18"}
-WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-"0.3.11"}
-WAZUH_SNORT_VERSION=${WAZUH_SNORT_VERSION:-"0.2.4"}
-WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-"0.1.4"}
-WAZUH_AGENT_STATUS_VERSION=${WAZUH_AGENT_STATUS_VERSION:-"0.3.3"}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
@@ -76,46 +71,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Help function to display usage
-help_message() {
-    printf "%b\n" "${BOLD}Wazuh Agent Comprehensive Uninstallation Script${NORMAL}"
-    printf "\n"
-    printf "%b\n" "${BOLD}DESCRIPTION:${NORMAL}"
-    printf "%s\n" "  This script automates the full removal of a Wazuh agent and its integrations."
-    printf "%s\n" "  It uninstalls core components automatically and will also uninstall Snort and Suricata NIDS engines if they are installed."
-    printf "\n"
-    printf "%b\n" "  ${BLUE}CORE COMPONENTS (Always Uninstalled):${NORMAL}"
-    printf "%s\n" "    - Wazuh Agent"
-    printf "%s\n" "    - Wazuh Agent Status"
-    printf "%s\n" "    - Yara Integration"
-    printf "%s\n" "    - Snort (if installed)"
-    printf "%s\n" "    - Suricata (if installed)"
-    printf "\n"
-    printf "%b\n" "  ${YELLOW}CONFIGURABLE COMPONENTS (User Choice):${NORMAL}"
-    printf "%s\n" "    You can optionally include a vulnerability scanner."
-    printf "\n"
-    printf "%b\n" "${BOLD}USAGE:${NORMAL}"
-    printf "%s\n" "  ./uninstall-agent.sh [-t] [-h]"
-    printf "\n"
-    printf "%b\n" "${BOLD}OPTIONS:${NORMAL}"
-    printf "%b\n" "  ${YELLOW}-t${NORMAL}         Optionally uninstall ${BOLD}Trivy${NORMAL}."
-    printf "%b\n" "  ${YELLOW}-h${NORMAL}         Display this help message and exit."
-    printf "\n"
-    printf "%b\n" "${BOLD}EXAMPLES:${NORMAL}"
-    printf "%s\n" "  # Uninstall all core components + Trivy:"
-    printf "%s\n" "  ./uninstall-agent.sh -t"
-    printf "\n"
-}
-
-# Only -t and -h options remain
-while getopts "th" opt; do
-    case ${opt} in
-        t) UNINSTALL_TRIVY="TRUE" ;;
-        h) help_message; exit 0 ;;
-        \?) error_message "Invalid option: -$OPTARG" >&2; help_message; exit 1 ;;
-    esac
-done
-
 # ==============================================================================
 # Main Uninstallation Logic
 # ==============================================================================
@@ -124,13 +79,7 @@ info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server.sh"
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server-status.sh"
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-yara.sh"
-
-# Always download both NIDS uninstallers
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-snort/refs/tags/v$WAZUH_SNORT_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-snort.sh"
+curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server.sh"
 
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
@@ -143,38 +92,7 @@ if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-server.sh") 2>&1; then
     exit 1
 fi
 
-# Step 2: Uninstall wazuh-server-status
-print_step 2 "Uninstalling wazuh-server-status..."
-if ! (bash "$TMP_FOLDER/uninstall-wazuh-server-status.sh") 2>&1; then
-    error_message "Failed to uninstall 'wazuh-server-status'"
-    exit 1
-fi
-
-# Step 3: Uninstall yara
-print_step 3 "Uninstalling yara..."
-if ! (bash "$TMP_FOLDER/uninstall-yara.sh") 2>&1; then
-    error_message "Failed to uninstall 'yara'"
-    exit 1
-fi
-
-# Step 4: Uninstall IDS engines if present
-if command_exists suricata; then
-    print_step 4 "Uninstalling suricata..."
-    if ! (bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
-        error_message "Failed to uninstall 'suricata'"
-        exit 1
-    fi
-fi
-
-if command_exists snort; then
-    print_step 4 "Uninstalling snort..."
-    if ! (bash "$TMP_FOLDER/uninstall-snort.sh") 2>&1; then
-        error_message "Failed to uninstall 'snort'"
-        exit 1
-    fi
-fi
-
-# Step 5: Uninstall Trivy if the flag is set
+# Step 2: Uninstall Trivy if the flag is set
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     print_step 5 "Uninstalling trivy..."
     if ! (bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
