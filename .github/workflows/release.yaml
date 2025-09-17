@@ -59,11 +59,11 @@ jobs:
         fi
 
     - name: Make script executable
-      run: chmod +x ./scripts/setup-agent.sh
+      run: chmod +x ./scripts/setup-server.sh
       
     - name: Launch setup-agent script
       run: |
-        sudo ./scripts/setup-agent.sh
+        sudo ./scripts/setup-server.sh
   release:
     name: Release
     permissions: write-all
