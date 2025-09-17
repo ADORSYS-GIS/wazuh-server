@@ -147,12 +147,13 @@ function Install-GnuSed {
     .DESCRIPTION
         This function downloads the GNU sed portable binaries and installs them silently
         without requiring GUI interaction. Uses portable binaries for headless compatibility.
+        This is an optional dependency - installation will continue if sed fails.
     
     .EXAMPLE
         Install-GnuSed
     #>
     
-    InfoMessage "=== Installing GNU sed (Portable) ==="
+    InfoMessage "=== Installing GNU sed (Portable) - Optional Dependency ==="
     
     # Define URLs and paths for portable version with dependencies
     $BinUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-bin.zip/download"
@@ -274,7 +275,8 @@ function Install-GnuSed {
         
     }
     catch {
-        ErrorMessage "GNU sed installation failed: $_"
+        WarningMessage "GNU sed installation failed: $_"
+        WarningMessage "This is an optional dependency. Continuing with installation..."
         
         # Clean up on failure
         if (Test-Path $BinPath) {
@@ -296,7 +298,9 @@ function Install-GnuSed {
             }
         }
         
-        return $false
+        # Return true to continue installation since sed is optional
+        InfoMessage "GNU sed installation skipped due to network/download issues"
+        return $true
     }
 }
 
@@ -382,11 +386,11 @@ if (-not (Install-VCppRedistributable)) {
 InfoMessage "=" * 60
 
 
-# Install GNU sed
+# Install GNU sed (optional dependency)
 InfoMessage "Installing GNU sed..."
 if (-not (Install-GnuSed)) {
-    ErrorMessage "GNU sed installation failed."
-    $overallSuccess = $false
+    WarningMessage "GNU sed installation failed, but this is optional. Continuing..."
+    # Don't set $overallSuccess = $false since sed is optional
 }
 
 
