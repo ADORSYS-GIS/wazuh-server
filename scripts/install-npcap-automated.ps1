@@ -97,24 +97,88 @@ function Download-NpcapInstaller {
     }
 }
 
-# Check if Npcap is already installed
+# Check if Npcap is completely installed (files + registry + drivers)
 function Test-NpcapInstalled {
+    # Check 1: Installation directory AND sufficient files
+    $hasFiles = $false
     if (Test-Path $global:NpcapConfig.InstallPath) {
         $fileCount = (Get-ChildItem $global:NpcapConfig.InstallPath -ErrorAction SilentlyContinue | Measure-Object).Count
-        if ($fileCount -gt 0) {
-            InfoMessage "Npcap appears to be already installed ($fileCount files found)"
-            return $true
+        $hasFiles = ($fileCount -gt 5)  # Require minimum files for complete installation
+    }
+    
+    # Check 2: Registry entry (proper Windows installation)
+    $hasRegistry = $null -ne (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | 
+                             Where-Object { $_.DisplayName -like "*npcap*" })
+    
+    # Check 3: Drivers (existing check)
+    $hasDrivers = $null -ne (Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue)
+    
+    # Require BOTH files AND drivers for complete installation
+    if ($hasFiles -and $hasDrivers) {
+        InfoMessage "Complete Npcap installation detected (Files: $hasFiles, Registry: $hasRegistry, Drivers: $hasDrivers)"
+        return $true
+    } elseif ($hasDrivers -and -not $hasFiles) {
+        WarnMessage "Partial Npcap installation detected (drivers only). Reinstallation required..."
+        return $false
+    } else {
+        InfoMessage "Npcap not installed or incomplete"
+        return $false
+    }
+}
+
+# Remove partial Npcap installation
+function Remove-PartialNpcapInstallation {
+    WarnMessage "Cleaning up partial Npcap installation..."
+    
+    # Stop and remove drivers
+    $drivers = Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue
+    foreach ($driver in $drivers) {
+        try {
+            if ($driver.State -eq "Running") {
+                $driver.StopService()
+                WarnMessage "Stopped driver: $($driver.Name)"
+            }
+        } catch {
+            WarnMessage "Could not stop driver: $($driver.Name) - $($_.Exception.Message)"
         }
     }
     
-    # Check for Npcap drivers
-    $drivers = Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue
-    if ($drivers) {
-        InfoMessage "Npcap drivers detected in system"
-        return $true
+    # Remove installation directory if exists
+    if (Test-Path $global:NpcapConfig.InstallPath) {
+        try {
+            Remove-Item $global:NpcapConfig.InstallPath -Recurse -Force -ErrorAction Stop
+            InfoMessage "Removed partial installation directory"
+        } catch {
+            WarnMessage "Could not remove installation directory: $($_.Exception.Message)"
+        }
+    }
+}
+
+# Comprehensive installation verification
+function Verify-NpcapInstallation {
+    InfoMessage "Performing comprehensive Npcap installation verification..."
+    
+    $checks = @{
+        "Installation Directory" = Test-Path $global:NpcapConfig.InstallPath
+        "Sufficient Files" = if (Test-Path $global:NpcapConfig.InstallPath) { 
+            (Get-ChildItem $global:NpcapConfig.InstallPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 5 
+        } else { $false }
+        "Registry Entry" = $null -ne (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | 
+                                     Where-Object { $_.DisplayName -like "*npcap*" })
+        "Driver Status" = $null -ne (Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue)
     }
     
-    return $false
+    $allPassed = $true
+    foreach ($check in $checks.GetEnumerator()) {
+        if ($check.Value) {
+            SuccessMessage "✓ $($check.Key): PASS"
+        } else {
+            ErrorMessage "✗ $($check.Key): FAIL"
+            $allPassed = $false
+        }
+    }
+    
+    return $allPassed
 }
 
 # Wait for installer processes to complete
@@ -163,15 +227,18 @@ function Stop-InstallerProcesses {
     }
 }
 
-# Perform automated Npcap installation
+# Perform automated Npcap installation with retry logic
 function Install-NpcapAutomated {
     InfoMessage "Starting automated Npcap installation..."
     
-    # Check if already installed
+    # Enhanced detection with cleanup
     if (Test-NpcapInstalled) {
-        SuccessMessage "Npcap is already installed. Skipping installation."
+        SuccessMessage "Complete Npcap installation detected. Skipping installation."
         return $true
     }
+    
+    # Clean partial installations
+    Remove-PartialNpcapInstallation
     
     # Ensure temp directory exists
     Ensure-TempDirectory
@@ -232,21 +299,20 @@ function Install-NpcapAutomated {
             Stop-InstallerProcesses
         }
         
-        # Verify installation
-        Start-Sleep -Seconds 5  # Allow time for files to be written
+        # Enhanced verification with comprehensive checks
+        InfoMessage "Waiting for installation to complete..."
+        Start-Sleep -Seconds 10  # Allow more time for files to be written
         
-        if (Test-NpcapInstalled) {
-            SuccessMessage "Npcap installation completed successfully!"
+        if (Verify-NpcapInstallation) {
+            SuccessMessage "Npcap installation completed and verified successfully!"
             
-            # Check driver status
+            # Additional driver status info
             $drivers = Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue
             if ($drivers) {
                 SuccessMessage "Npcap drivers are loaded and running!"
                 $drivers | ForEach-Object { 
                     InfoMessage "  - Driver: $($_.Name) - Status: $($_.State)" 
                 }
-            } else {
-                WarnMessage "Npcap drivers not detected. System reboot may be required."
             }
             
             return $true
@@ -271,21 +337,42 @@ function Install-NpcapAutomated {
     }
 }
 
+# Install Npcap with retry logic
+function Install-NpcapWithRetry {
+    $maxRetries = 2
+    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+        InfoMessage "Installation attempt $attempt of $maxRetries"
+        
+        if (Install-NpcapAutomated) {
+            return $true
+        }
+        
+        if ($attempt -lt $maxRetries) {
+            WarnMessage "Installation failed. Cleaning up and retrying..."
+            Remove-PartialNpcapInstallation
+            Start-Sleep -Seconds 10
+        }
+    }
+    
+    ErrorMessage "All installation attempts failed"
+    return $false
+}
+
 # Main execution
 function Main {
     InfoMessage "=== Automated Npcap Installation Script ==="
     InfoMessage "This script will install Npcap using keyboard automation"
-    InfoMessage "Designed for headless Windows Server environments"
+    InfoMessage "Designed for headless Windows Server environments with enhanced detection"
     
     try {
-        $result = Install-NpcapAutomated
+        $result = Install-NpcapWithRetry
         
         if ($result) {
             SuccessMessage "Npcap installation process completed successfully!"
             InfoMessage "Npcap is now ready for use with Suricata and other network monitoring tools"
             exit 0
         } else {
-            ErrorMessage "Npcap installation failed!"
+            ErrorMessage "Npcap installation failed after all retry attempts!"
             exit 1
         }
     } catch {
