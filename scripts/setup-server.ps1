@@ -1,10 +1,14 @@
+# Optimized Wazuh Server Setup Script for Silent Windows Server Environments
+# This version focuses on dependencies, Suricata, and Npcap installation only
+# Simplified from the original multi-component setup script
+
+#Requires -RunAsAdministrator
+
 param(
-    [switch]$InstallSnort,
-    [switch]$InstallSuricata,
     [switch]$Help
 )
 
-# Set strict mode for script execution (after param declaration)
+# Set strict mode for script execution
 Set-StrictMode -Version Latest
 
 # Variables (default log level, app details, paths)
@@ -14,7 +18,7 @@ $WAZUH_MANAGER = if ($env:WAZUH_MANAGER) { $env:WAZUH_MANAGER } else { "wazuh.ex
 $WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.12.0-1" }
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main"
+$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main"
 $VERSION_FILE_URL = "$RepoUrl/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 $TEMP_DIR = [System.IO.Path]::GetTempPath()
@@ -32,7 +36,7 @@ function Log {
     param (
         [string]$Level,
         [string]$Message,
-        [string]$Color = "White"  # Default color
+        [string]$Color = "White"
     )
     $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
@@ -79,7 +83,7 @@ function Cleanup-Installers {
     }
 }
 
-# Step 0: Download dependency script and execute
+# Step 1: Download dependency script and execute
 function Install-Dependencies {
     $InstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
@@ -90,13 +94,15 @@ function Install-Dependencies {
         Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
         InfoMessage "Dependency script downloaded successfully."
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
+        SuccessMessage "Dependencies installed successfully"
     }
     catch {
         ErrorMessage "Error during dependency installation: $($_.Exception.Message)"
+        throw
     }
 }
 
-# Step 1: Download and execute Wazuh agent script with error handling
+# Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
     $InstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
@@ -107,13 +113,15 @@ function Install-WazuhAgent {
         Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
         InfoMessage "Wazuh agent script downloaded successfully."
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
+        SuccessMessage "Wazuh agent installed successfully"
     }
     catch {
         ErrorMessage "Error during Wazuh agent installation: $($_.Exception.Message)"
+        throw
     }
 }
 
-# Step 2: Download and install wazuh-cert-oauth2-client with error handling
+# Step 3: Download and install wazuh-cert-oauth2-client with error handling
 function Install-OAuth2Client {
     $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.ps1"
     $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
@@ -124,13 +132,15 @@ function Install-OAuth2Client {
         Invoke-WebRequest -Uri $OAuth2Url -OutFile $OAuth2Script -ErrorAction Stop
         InfoMessage "wazuh-cert-oauth2-client script downloaded successfully."
         & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ArgumentList "-LOG_LEVEL", $LOG_LEVEL, "-OSSEC_CONF_PATH", $OSSEC_CONF_PATH, "-APP_NAME", $APP_NAME, "-WOPS_VERSION", $WOPS_VERSION -ErrorAction Stop
+        SuccessMessage "OAuth2 cert authentication installed successfully"
     }
     catch {
         ErrorMessage "Error during wazuh-cert-oauth2-client installation: $($_.Exception.Message)"
+        throw
     }
 }
 
-# Step 3: Download and install YARA with error handling
+# Step 4: Download and install YARA with error handling
 function Install-Yara {
     $YaraUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.ps1"
     $YaraScript = "$env:TEMP\install_yara.ps1"
@@ -141,90 +151,17 @@ function Install-Yara {
         Invoke-WebRequest -Uri $YaraUrl -OutFile $YaraScript -ErrorAction Stop
         InfoMessage "YARA installation script downloaded successfully."
         & powershell.exe -ExecutionPolicy Bypass -File $YaraScript -ErrorAction Stop
+        SuccessMessage "YARA installed successfully"
     }
     catch {
         ErrorMessage "Error during YARA installation: $($_.Exception.Message)"
+        throw
     }
 }
 
-# Step 4: Download and install Snort with error handling
-function Install-Snort {
-    $SnortUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-snort/refs/tags/v$WAZUH_SNORT_VERSION/scripts/windows/snort.ps1"
-    $SnortScript = "$env:TEMP\snort.ps1"
-    $global:InstallerFiles += $SnortScript
-
-    try {
-        InfoMessage "Downloading and executing Snort installation script..."
-        Invoke-WebRequest -Uri $SnortUrl -OutFile $SnortScript -ErrorAction Stop
-        InfoMessage "Snort installation script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $SnortScript -ErrorAction Stop
-    }
-    catch {
-        ErrorMessage "Error during Snort installation: $($_.Exception.Message)"
-    }
-}
-
-# Helper functions to uninstall Snort and Suricata
-function Uninstall-Snort {
-    $SnortUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-snort/refs/tags/v$WAZUH_SNORT_VERSION/scripts/uninstall.ps1"
-    $UninstallSnortScript = "$env:TEMP\uninstall_snort.ps1"
-    $global:InstallerFiles += $UninstallSnortScript
-    $TaskName = "SnortStartup"
-
-    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if ($task) {
-        try {
-            InfoMessage "Downloading and executing Snort uninstallation script..."
-            Invoke-WebRequest -Uri $SnortUrl -OutFile $UninstallSnortScript -ErrorAction Stop
-            InfoMessage "Snort uninstallation script downloaded successfully."
-            & powershell.exe -ExecutionPolicy Bypass -File $UninstallSnortScript -ErrorAction Stop
-        }
-        catch {
-            ErrorMessage "Error during Snort uninstallation: $($_.Exception.Message)"
-        }
-    }
-}
-
-# Step 5: Download and install Suricata with error handling
-function Install-Suricata {
-    $SuricataUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/install.ps1"
-    $SuricataScript = "$env:TEMP\suricata.ps1"
-    $global:InstallerFiles += $SuricataScript
-
-    try {
-        InfoMessage "Snort is installed. Downloading and executing Suricata installation script..."
-        Invoke-WebRequest -Uri $SuricataUrl -OutFile $SuricataScript -ErrorAction Stop
-        InfoMessage "Suricata installation script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
-    }
-    catch {
-        ErrorMessage "Error during Suricata installation: $($_.Exception.Message)"
-    }
-}
-
-function Uninstall-Suricata {
-    $SuricataUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.ps1"
-    $UninstallSuricataScript = "$env:TEMP\uninstall_suricata.ps1"
-    $global:InstallerFiles += $UninstallSuricataScript
-    $TaskName = "SuricataStartup"
-
-    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if ($task) {
-        try {
-            InfoMessage "Suricata is installed. Downloading and executing Suricata uninstallation script..."
-            Invoke-WebRequest -Uri $SuricataUrl -OutFile $UninstallSuricataScript -ErrorAction Stop
-            InfoMessage "Suricata uninstallation script downloaded successfully."
-            & powershell.exe -ExecutionPolicy Bypass -File $UninstallSuricataScript -ErrorAction Stop
-        }
-        catch {
-            ErrorMessage "Error during Suricata uninstallation: $($_.Exception.Message)"
-        }
-    }
-}
-
-# Step 6: Download and install Wazuh Agent Status with error handling
+# Step 5: Download and install Wazuh Agent Status with error handling
 function Install-AgentStatus {
-    $AgentStatusUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/install.ps1"
+    $AgentStatusUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server-status/refs/tags/v$WAZUH_AGENT_STATUS_VERSION/scripts/install.ps1"
     $AgentStatusScript = "$env:TEMP\install-agent-status.ps1"
     $global:InstallerFiles += $AgentStatusScript
 
@@ -233,9 +170,30 @@ function Install-AgentStatus {
         Invoke-WebRequest -Uri $AgentStatusUrl -OutFile $AgentStatusScript -ErrorAction Stop
         InfoMessage "Agent Status installation script downloaded successfully."
         & powershell.exe -ExecutionPolicy Bypass -File $AgentStatusScript -ErrorAction Stop
+        SuccessMessage "Agent Status installed successfully"
     }
     catch {
         ErrorMessage "Error during Agent Status installation: $($_.Exception.Message)"
+        throw
+    }
+}
+
+# Step 6: Download and execute Silent Suricata installation (includes Npcap)
+function Install-SuricataWithNpcap {
+    $SuricataURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/install-suricata-silent.ps1"
+    $SuricataPath = "$env:TEMP\install-suricata-silent.ps1"
+    $global:InstallerFiles += $SuricataPath
+
+    try {
+        InfoMessage "Downloading and executing Silent Suricata installation script (includes automated Npcap)..."
+        Invoke-WebRequest -Uri $SuricataURL -OutFile $SuricataPath -ErrorAction Stop
+        InfoMessage "Silent Suricata script downloaded successfully."
+        & powershell.exe -ExecutionPolicy Bypass -File $SuricataPath -ErrorAction Stop
+        SuccessMessage "Suricata and Npcap installed successfully"
+    }
+    catch {
+        ErrorMessage "Error during Suricata installation: $($_.Exception.Message)"
+        throw
     }
 }
 
@@ -247,22 +205,27 @@ function DownloadVersionFile {
     else {
         try {
             Invoke-WebRequest -Uri $VERSION_FILE_URL -OutFile $VERSION_FILE_PATH -ErrorAction Stop
+            SuccessMessage "Version file downloaded successfully"
         } catch {
             ErrorMessage "Failed to download version file: $($_.Exception.Message)"
-        } finally {
-            InfoMessage "Version file downloaded successfully"
         }
     }
 }
 
 function Show-Help {
-    Write-Host "Usage:  .\setup-agent.ps1 [-InstallSnort] [-InstallSuricata] [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\setup-server.ps1 [-Help]" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "This script automates the installation of various Wazuh components and related tools." -ForegroundColor Cyan
+    Write-Host "This script automates the complete installation of Wazuh Agent and security components for Windows Server environments." -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Components Installed:" -ForegroundColor Cyan
+    Write-Host "  - Dependencies (curl, jq, chocolatey, etc.) - SILENT" -ForegroundColor Cyan
+    Write-Host "  - Wazuh Agent - SILENT" -ForegroundColor Cyan
+    Write-Host "  - OAuth2 Certificate Authentication - SILENT" -ForegroundColor Cyan
+    Write-Host "  - YARA malware detection - SILENT" -ForegroundColor Cyan
+    Write-Host "  - Wazuh Agent Status monitoring - SILENT" -ForegroundColor Cyan
+    Write-Host "  - Suricata IDS with automated Npcap - SILENT" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
-    Write-Host "  -InstallSnort      : Installs Snort. Cannot be used with -InstallSuricata." -ForegroundColor Cyan
-    Write-Host "  -InstallSuricata   : Installs Suricata. Cannot be used with -InstallSnort." -ForegroundColor Cyan
     Write-Host "  -Help              : Displays this help message." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Environment Variables (optional):" -ForegroundColor Cyan
@@ -270,17 +233,14 @@ function Show-Help {
     Write-Host "  APP_NAME           : Sets the application name. Default: wazuh-cert-oauth2-client" -ForegroundColor Cyan
     Write-Host "  WAZUH_MANAGER      : Sets the Wazuh Manager address. Default: wazuh.example.com" -ForegroundColor Cyan
     Write-Host "  WAZUH_AGENT_VERSION: Sets the Wazuh Agent version. Default: 4.12.0-1" -ForegroundColor Cyan
-    Write-Host "  WAZUH_YARA_VERSION : Sets the Wazuh YARA module version. Default: 0.3.4" -ForegroundColor Cyan
-    Write-Host "  WAZUH_SNORT_VERSION: Sets the Wazuh Snort module version. Default: 0.2.2" -ForegroundColor Cyan
-    Write-Host "  WAZUH_SURICATA_VERSION: Sets the Wazuh Suricata module version. Default: 0.1.0" -ForegroundColor Cyan
-    Write-Host "  WAZUH_AGENT_STATUS_VERSION: Sets the Wazuh Agent Status module version. Default: 0.3.2" -ForegroundColor Cyan
+    Write-Host "  WAZUH_YARA_VERSION : Sets the Wazuh YARA module version. Default: 0.3.11" -ForegroundColor Cyan
+    Write-Host "  WAZUH_SURICATA_VERSION: Sets the Wazuh Suricata module version. Default: 0.1.4" -ForegroundColor Cyan
+    Write-Host "  WAZUH_AGENT_STATUS_VERSION: Sets the Wazuh Agent Status module version. Default: 0.3.3" -ForegroundColor Cyan
     Write-Host "  WOPS_VERSION       : Sets the WOPS client version. Default: 0.2.18" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
-    Write-Host "  .\setup-agent.ps1 -InstallSnort" -ForegroundColor Cyan
-    Write-Host "  .\setup-agent.ps1 -InstallSuricata" -ForegroundColor Cyan
-    Write-Host "  .\setup-agent.ps1 -Help" -ForegroundColor Cyan
-    Write-Host "  $env:LOG_LEVEL='DEBUG'; .\setup-agent.ps1 -InstallSuricata" -ForegroundColor Cyan
+    Write-Host "  .\setup-server.ps1" -ForegroundColor Cyan
+    Write-Host "  $env:LOG_LEVEL='DEBUG'; .\setup-server.ps1" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -290,52 +250,47 @@ if ($Help) {
     Exit 0
 }
 
-# Provide a non-interactive default for NIDS selection (default: Suricata)
-if (-not $InstallSnort -and -not $InstallSuricata) {
-    InfoMessage "No NIDS selected, defaulting to: Suricata. Use -InstallSuricata or -InstallSnort to override."
-    $InstallSuricata = $true
-}
-
-# Validate Snort and Suricata choice
-if ($InstallSnort -and $InstallSuricata) {
-    ErrorMessage "Cannot install both Snort and Suricata. Please choose one."
-    Show-Help
-    Exit 1
-}
-
 # Main Execution wrapped in a try-finally to ensure cleanup runs even if errors occur.
 try {
+    InfoMessage "=== COMPLETE Wazuh Agent Setup for Silent Windows Server Environments ==="
+    InfoMessage "Installing: Dependencies + Wazuh Agent + OAuth2 Auth + YARA + Server Status + Suricata + Npcap"
+    
     SectionSeparator "Installing Dependencies"
     Install-Dependencies
+    
     SectionSeparator "Installing Wazuh Agent"
     Install-WazuhAgent
-    SectionSeparator "Installing OAuth2Client"
+    
+    SectionSeparator "Installing OAuth2 Certificate Authentication"
     Install-OAuth2Client
-    SectionSeparator "Installing Agent Status"
+    
+    SectionSeparator "Installing Agent Status Monitoring"
     Install-AgentStatus
-    SectionSeparator "Installing Yara"
+    
+    SectionSeparator "Installing YARA Malware Detection"
     Install-Yara
-
-    # Install Snort or Suricata based on user choice
-    if ($InstallSnort) {
-        Uninstall-Suricata
-        SectionSeparator "Installing Snort"
-        Install-Snort
-    }
-    elseif ($InstallSuricata) {
-        Uninstall-Snort
-        SectionSeparator "Installing Suricata"
-        Install-Suricata
-    }
-    else {
-        WarningMessage "Neither Snort nor Suricata selected for installation. Skipping."
-    }
-
+    
+    SectionSeparator "Installing Suricata IDS with Automated Npcap"
+    Install-SuricataWithNpcap
+    
     SectionSeparator "Downloading Version File"
     DownloadVersionFile
+    
+    SuccessMessage "=== COMPLETE Wazuh Agent Setup Completed Successfully ==="
+    InfoMessage "All components installed and configured:"
+    InfoMessage "  ✓ Dependencies (curl, jq, chocolatey, etc.)"
+    InfoMessage "  ✓ Wazuh Agent with silent installation"
+    InfoMessage "  ✓ OAuth2 Certificate Authentication"
+    InfoMessage "  ✓ YARA malware detection engine"
+    InfoMessage "  ✓ Agent Status monitoring"
+    InfoMessage "  ✓ Suricata IDS with automated Npcap (no GUI)"
+    InfoMessage "  ✓ All services configured for automatic startup"
+}
+catch {
+    ErrorMessage "Setup failed: $($_.Exception.Message)"
+    exit 1
 }
 finally {
     InfoMessage "Cleaning up installer files..."
     Cleanup-Installers
-    SuccessMessage "Wazuh Agent Setup Completed Successfully"
 }
