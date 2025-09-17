@@ -171,9 +171,9 @@ function Verify-NpcapInstallation {
     $allPassed = $true
     foreach ($check in $checks.GetEnumerator()) {
         if ($check.Value) {
-            SuccessMessage "✓ $($check.Key): PASS"
+            SuccessMessage "[PASS] $($check.Key): OK"
         } else {
-            ErrorMessage "✗ $($check.Key): FAIL"
+            ErrorMessage "[FAIL] $($check.Key): MISSING"
             $allPassed = $false
         }
     }
