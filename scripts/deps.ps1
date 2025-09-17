@@ -154,9 +154,11 @@ function Install-GnuSed {
     
     InfoMessage "=== Installing GNU sed (Portable) ==="
     
-    # Define URLs and paths for portable version
-    $SourceUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-bin.zip/download"
-    $DestinationPath = "$env:TEMP\sed-4.2.1-bin.zip"
+    # Define URLs and paths for portable version with dependencies
+    $BinUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-bin.zip/download"
+    $DepUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-dep.zip/download"
+    $BinPath = "$env:TEMP\sed-4.2.1-bin.zip"
+    $DepPath = "$env:TEMP\sed-4.2.1-dep.zip"
     $InstallPath = "$env:ProgramFiles\GnuWin32"
     
     InfoMessage "[STEP 1/5] Checking if GNU sed is already installed..."
@@ -175,12 +177,17 @@ function Install-GnuSed {
     }
     
     try {
-        # Download the portable binaries using BITS
-        InfoMessage "[STEP 2/5] Downloading GNU sed portable binaries to $DestinationPath..."
-        Start-BitsTransfer -Source $SourceUrl -Destination $DestinationPath -ErrorAction Stop
-        InfoMessage "Download completed successfully. File size: $((Get-Item $DestinationPath).Length) bytes"
+        # Download the portable binaries and dependencies using BITS
+        InfoMessage "[STEP 2/5] Downloading GNU sed binaries and dependencies..."
+        InfoMessage "Downloading binaries to $BinPath..."
+        Start-BitsTransfer -Source $BinUrl -Destination $BinPath -ErrorAction Stop
+        InfoMessage "Binaries download completed. File size: $((Get-Item $BinPath).Length) bytes"
+        
+        InfoMessage "Downloading dependencies to $DepPath..."
+        Start-BitsTransfer -Source $DepUrl -Destination $DepPath -ErrorAction Stop
+        InfoMessage "Dependencies download completed. File size: $((Get-Item $DepPath).Length) bytes"
 
-        InfoMessage "[STEP 3/5] Extracting and installing portable binaries..."
+        InfoMessage "[STEP 3/5] Extracting and installing binaries and dependencies..."
         
         # Create installation directory
         if (-not (Test-Path $InstallPath)) {
@@ -188,16 +195,21 @@ function Install-GnuSed {
             InfoMessage "Created installation directory: $InstallPath"
         }
         
-        # Extract the ZIP file
+        # Extract both ZIP files
         try {
             Add-Type -AssemblyName System.IO.Compression.FileSystem
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($DestinationPath, $InstallPath)
-            InfoMessage "Portable binaries extracted successfully to $InstallPath"
+            InfoMessage "Extracting binaries..."
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($BinPath, $InstallPath)
+            InfoMessage "Extracting dependencies..."
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($DepPath, $InstallPath)
+            InfoMessage "Binaries and dependencies extracted successfully to $InstallPath"
         }
         catch {
             # Fallback to PowerShell 5.0+ Expand-Archive
-            Expand-Archive -Path $DestinationPath -DestinationPath $InstallPath -Force
-            InfoMessage "Portable binaries extracted successfully using Expand-Archive"
+            InfoMessage "Using Expand-Archive fallback..."
+            Expand-Archive -Path $BinPath -DestinationPath $InstallPath -Force
+            Expand-Archive -Path $DepPath -DestinationPath $InstallPath -Force
+            InfoMessage "Binaries and dependencies extracted successfully using Expand-Archive"
         }
 
         InfoMessage "[STEP 4/5] Configuring PATH and verifying installation..."
@@ -245,15 +257,16 @@ function Install-GnuSed {
             }
         }
 
-        InfoMessage "[STEP 5/5] Cleaning up installer file..."
+        InfoMessage "[STEP 5/5] Cleaning up installer files..."
         
-        # Clean up the ZIP file
+        # Clean up both ZIP files
         try {
-            Remove-Item $DestinationPath -Force -ErrorAction Stop
-            InfoMessage "Installer file cleaned up successfully"
+            Remove-Item $BinPath -Force -ErrorAction Stop
+            Remove-Item $DepPath -Force -ErrorAction Stop
+            InfoMessage "Installer files cleaned up successfully"
         }
         catch {
-            WarnMessage "Could not clean up installer file: $_"
+            WarningMessage "Could not clean up installer files: $_"
         }
         
         InfoMessage "GNU sed portable installation completed successfully!"
@@ -264,13 +277,22 @@ function Install-GnuSed {
         ErrorMessage "GNU sed installation failed: $_"
         
         # Clean up on failure
-        if (Test-Path $DestinationPath) {
+        if (Test-Path $BinPath) {
             try {
-                Remove-Item $DestinationPath -Force
-                InfoMessage "Cleaned up failed installer file"
+                Remove-Item $BinPath -Force
+                InfoMessage "Cleaned up failed binaries file"
             }
             catch {
-                WarnMessage "Could not clean up failed installer file: $_"
+                WarningMessage "Could not clean up failed binaries file: $_"
+            }
+        }
+        if (Test-Path $DepPath) {
+            try {
+                Remove-Item $DepPath -Force
+                InfoMessage "Cleaned up failed dependencies file"
+            }
+            catch {
+                WarningMessage "Could not clean up failed dependencies file: $_"
             }
         }
         
