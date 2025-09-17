@@ -140,107 +140,130 @@ function Install-BurntToastModule {
 
 
 function Install-GnuSed {
-    # Define the source URL and destination path
-    $SourceUrl = "https://downloads.sourceforge.net/project/gnuwin32/sed/4.2.1/sed-4.2.1-setup.exe?ts=gAAAAABnihwyfyy8CnXn7cxMYUNSQkpG2f2dUMFeiIGE8dM6A4aJ9G6yYtMvnuqpFQ658BS-pINAAB2fnD6SQOVdenwjEcrf0w%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fsed%2F4.2.1%2Fsed-4.2.1-setup.exe%2Fdownload%3Fuse_mirror%3Ddeac-fra%26r%3Dhttps%253A%252F%252Fsourceforge.net%252Fprojects%252Fgnuwin32%252Ffiles%252Fsed%252F4.2.1%252Fsed-4.2.1-setup.exe%252Fdownload%253Fuse_mirror%253Dnetcologne%2522"
-    $DestinationPath = "$env:TEMP\sed-4.2.1-setup.exe"
-
-
-    # Define a test command to check if GNU sed is installed
-    $TestCommand = "sed --version"
-    $DefaultInstallPath = "C:\Program Files (x86)\GnuWin32\bin"
-
-
+    <#
+    .SYNOPSIS
+        Downloads and installs GNU sed for Windows using portable version.
+    
+    .DESCRIPTION
+        This function downloads the GNU sed portable binaries and installs them silently
+        without requiring GUI interaction. Uses portable binaries for headless compatibility.
+    
+    .EXAMPLE
+        Install-GnuSed
+    #>
+    
+    InfoMessage "=== Installing GNU sed (Portable) ==="
+    
+    # Define URLs and paths for portable version
+    $SourceUrl = "https://sourceforge.net/projects/gnuwin32/files/sed/4.2.1/sed-4.2.1-bin.zip/download"
+    $DestinationPath = "$env:TEMP\sed-4.2.1-bin.zip"
+    $InstallPath = "$env:ProgramFiles\GnuWin32"
+    
+    InfoMessage "[STEP 1/5] Checking if GNU sed is already installed..."
+    
+    # Check if sed is already available in PATH
     try {
-        # Check if GNU sed is already installed
-        InfoMessage "[STEP 1/5] Checking if GNU sed is already installed..."
-        $versionOutput = & cmd /c $TestCommand 2>&1
-        if ($versionOutput -match "GNU sed") {
-            InfoMessage "GNU sed is already installed. Version: $($versionOutput -split '\n' | Select-Object -First 1)" 
+        $sedVersion = & sed --version 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            InfoMessage "GNU sed is already installed and available in PATH"
+            InfoMessage "Version info: $($sedVersion[0])"
             return $true
         }
-    } catch {
-        InfoMessage "GNU sed is not installed. Proceeding with download and installation..." 
     }
-
-
+    catch {
+        InfoMessage "GNU sed not found in PATH, proceeding with installation..."
+    }
+    
     try {
-        # Download the installer using BITS
-        InfoMessage "[STEP 2/5] Downloading GNU sed setup file to $DestinationPath..."
+        # Download the portable binaries using BITS
+        InfoMessage "[STEP 2/5] Downloading GNU sed portable binaries to $DestinationPath..."
         Start-BitsTransfer -Source $SourceUrl -Destination $DestinationPath -ErrorAction Stop
         InfoMessage "Download completed successfully. File size: $((Get-Item $DestinationPath).Length) bytes"
 
-
-        InfoMessage "[STEP 3/5] Starting silent installation..." 
+        InfoMessage "[STEP 3/5] Extracting and installing portable binaries..."
         
-        # Run the installer silently with proper error handling
-        $installProcess = Start-Process -FilePath $DestinationPath -ArgumentList "/S" -Wait -PassThru -ErrorAction Stop
-        
-        if ($installProcess.ExitCode -eq 0) {
-            InfoMessage "GNU sed installer completed with exit code: $($installProcess.ExitCode)"
-        } else {
-            ErrorMessage "GNU sed installer failed with exit code: $($installProcess.ExitCode)"
-            return $false
-        }
-
-
-        InfoMessage "[STEP 4/5] Verifying installation..."
-        # Check if the installation path exists
-        if (-Not (Test-Path $DefaultInstallPath)) {
-            ErrorMessage "Installation directory not found at $DefaultInstallPath. Installation may have failed." 
-            return $false
+        # Create installation directory
+        if (-not (Test-Path $InstallPath)) {
+            New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
+            InfoMessage "Created installation directory: $InstallPath"
         }
         
-        # Verify sed.exe exists
-        $sedExePath = Join-Path $DefaultInstallPath "sed.exe"
-        if (-Not (Test-Path $sedExePath)) {
-            ErrorMessage "sed.exe not found at $sedExePath. Installation incomplete."
-            return $false
-        }
-        
-        InfoMessage "GNU sed binary verified at: $sedExePath"
-
-
-        InfoMessage "[STEP 5/5] Configuring system PATH..."
-        # Add sed to the system PATH if it's not already included
-        $currentPath = [Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
-        if ($currentPath -notlike "*$DefaultInstallPath*") {
-            InfoMessage "Adding GNU sed to the system PATH..." 
-            
-            $newPath = $env:Path + ";$DefaultInstallPath"
-            [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::Machine)
-            $env:Path = $newPath
-            InfoMessage "GNU sed added to system PATH: $DefaultInstallPath" 
-        } else {
-            InfoMessage "GNU sed is already in the system PATH." 
-        }
-        
-        # Final verification
+        # Extract the ZIP file
         try {
-            $finalTest = & cmd /c "sed --version" 2>&1
-            if ($finalTest -match "GNU sed") {
-                SuccessMessage "GNU sed installation completed and verified successfully."
-                return $true
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($DestinationPath, $InstallPath)
+            InfoMessage "Portable binaries extracted successfully to $InstallPath"
+        }
+        catch {
+            # Fallback to PowerShell 5.0+ Expand-Archive
+            Expand-Archive -Path $DestinationPath -DestinationPath $InstallPath -Force
+            InfoMessage "Portable binaries extracted successfully using Expand-Archive"
+        }
+
+        InfoMessage "[STEP 4/5] Configuring PATH and verifying installation..."
+        
+        # Add GNU sed to PATH
+        $gnuSedBinPath = "$InstallPath\bin"
+        if (Test-Path $gnuSedBinPath) {
+            $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+            if ($currentPath -notlike "*$gnuSedBinPath*") {
+                InfoMessage "Adding GNU sed to system PATH: $gnuSedBinPath"
+                [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$gnuSedBinPath", "Machine")
+                $env:PATH = "$env:PATH;$gnuSedBinPath"
+            }
+        } else {
+            ErrorMessage "GNU sed bin directory not found at: $gnuSedBinPath"
+            return $false
+        }
+        
+        # Verify installation
+        try {
+            $sedVersion = & sed --version 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                InfoMessage "GNU sed installation verified successfully"
+                InfoMessage "Version: $($sedVersion[0])"
             } else {
-                ErrorMessage "GNU sed installation verification failed."
+                ErrorMessage "GNU sed installation verification failed"
                 return $false
             }
         } catch {
-            ErrorMessage "GNU sed installation verification failed: $($_.Exception.Message)"
+            ErrorMessage "GNU sed installation verification failed: $_"
             return $false
         }
+
+        InfoMessage "[STEP 5/5] Cleaning up installer file..."
         
-    } catch {
-        # Catch and display any errors
-        ErrorMessage "GNU sed installation failed: $($_.Exception.Message)" 
-        return $false
-    } finally {
-        # Clean up installer file
-        if (Test-Path $DestinationPath) {
-            Remove-Item -Path $DestinationPath -Force -ErrorAction SilentlyContinue
-            InfoMessage "Installer file cleaned up: $DestinationPath"
+        # Clean up the ZIP file
+        try {
+            Remove-Item $DestinationPath -Force -ErrorAction Stop
+            InfoMessage "Installer file cleaned up successfully"
         }
+        catch {
+            WarnMessage "Could not clean up installer file: $_"
+        }
+        
+        InfoMessage "GNU sed portable installation completed successfully!"
+        return $true
+        
+    }
+    catch {
+        ErrorMessage "GNU sed installation failed: $_"
+        
+        # Clean up on failure
+        if (Test-Path $DestinationPath) {
+            try {
+                Remove-Item $DestinationPath -Force
+                InfoMessage "Cleaned up failed installer file"
+            }
+            catch {
+                WarnMessage "Could not clean up failed installer file: $_"
+            }
+        }
+        
+        return $false
     }
 }
+
 
 
 
