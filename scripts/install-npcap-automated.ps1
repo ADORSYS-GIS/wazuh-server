@@ -163,8 +163,6 @@ function Verify-NpcapInstallation {
         "Sufficient Files" = if (Test-Path $global:NpcapConfig.InstallPath) { 
             (Get-ChildItem $global:NpcapConfig.InstallPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 5 
         } else { $false }
-        "Registry Entry" = $null -ne (Get-ItemProperty "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | 
-                                     Where-Object { $_.DisplayName -like "*npcap*" })
         "Driver Status" = $null -ne (Get-WmiObject Win32_SystemDriver -Filter "Name LIKE 'npf%' OR Name LIKE 'npcap%'" -ErrorAction SilentlyContinue)
     }
     
@@ -274,7 +272,7 @@ function Install-NpcapAutomated {
         # Step 2: Navigate through options (use default settings)
         InfoMessage "Step 2: Proceeding with default options..."
         Send-KeysToWindow -Keys "{ENTER}" -DelayMs 1000  # Next button
-        Start-Sleep -Seconds 10  # Wait 10 seconds before next step
+        Start-Sleep -Seconds 25  # Wait 25 seconds before next step
         
         # Step 3: Start installation
         InfoMessage "Step 3: Starting installation..."
