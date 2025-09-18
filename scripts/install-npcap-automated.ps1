@@ -179,6 +179,186 @@ function Verify-NpcapInstallation {
     return $allPassed
 }
 
+# Check if running in SSH session (no interactive desktop)
+function Test-SSHSession {
+    try {
+        # Check if we're in a non-interactive session
+        $sessionType = [System.Environment]::UserInteractive
+        
+        # Additional check for SSH indicators
+        $isSSH = $null -ne $env:SSH_CLIENT -or $null -ne $env:SSH_CONNECTION -or $null -ne $env:SSH_TTY
+        
+        return (-not $sessionType) -or $isSSH -or ($null -eq $env:SESSIONNAME)
+    } catch {
+        return $true  # Assume SSH if we can't determine
+    }
+}
+
+# Scheduled task installation for SSH sessions
+function Install-NpcapViaScheduledTask {
+    [CmdletBinding()]
+    param()
+    
+    try {
+        InfoMessage "Using scheduled task method for SSH-compatible GUI automation"
+        
+        # Download installer if needed
+        if (-not (Test-Path $global:NpcapConfig.InstallerPath)) {
+            if (-not (Download-NpcapInstaller)) {
+                return $false
+            }
+        }
+        
+        # Create a PowerShell script that will run the GUI automation
+        $taskScriptPath = "C:\Temp\npcap-install-task.ps1"
+        $logPath = "C:\Temp\npcap-install.log"
+        
+        $taskScript = @"
+# Npcap Installation Task Script
+Start-Transcript -Path '$logPath' -Append
+Write-Host "Starting Npcap installation via scheduled task..."
+
+try {
+    # Load the automation functions
+    `$global:NpcapConfig = @{
+        TempDir = "C:\Temp"
+        InstallerPath = "$($global:NpcapConfig.InstallerPath)"
+        InstallPath = "C:\Program Files\Npcap"
+        MaxWaitTime = 45
+    }
+    
+    # Start the installer process
+    `$process = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -PassThru -ErrorAction Stop
+    Write-Host "Npcap installer started (PID: `$(`$process.Id))"
+    
+    # Wait for installer window to appear
+    Start-Sleep -Seconds 5
+    
+    # Load Windows Forms for SendKeys
+    Add-Type -AssemblyName System.Windows.Forms
+    
+    # Step 1: Press Enter to start installation
+    Write-Host "Step 1: Starting installation..."
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Seconds 10
+    
+    # Step 2: Navigate through default options (25 second wait)
+    Write-Host "Step 2: Navigating default options..."
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Seconds 25
+    
+    # Step 3: Accept license agreement
+    Write-Host "Step 3: Accepting license..."
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Seconds 10
+    
+    # Step 4: Proceed with installation options
+    Write-Host "Step 4: Installation options..."
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Seconds 10
+    
+    # Step 5: Start installation
+    Write-Host "Step 5: Starting installation process..."
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Seconds 10
+    
+    # Wait for installation to complete
+    Write-Host "Waiting for installation to complete..."
+    `$waitTime = 0
+    while (`$waitTime -lt 45 -and -not `$process.HasExited) {
+        Start-Sleep -Seconds 2
+        `$waitTime += 2
+        Write-Host "Waiting... `$waitTime seconds"
+    }
+    
+    if (`$process.HasExited) {
+        Write-Host "Installation completed successfully"
+        exit 0
+    } else {
+        Write-Host "Installation timed out"
+        exit 1
+    }
+    
+} catch {
+    Write-Host "Error during installation: `$(`$_.Exception.Message)"
+    exit 1
+} finally {
+    Stop-Transcript
+}
+"@
+        
+        # Write the task script
+        $taskScript | Out-File -FilePath $taskScriptPath -Encoding UTF8 -Force
+        InfoMessage "Created installation task script at: $taskScriptPath"
+        
+        # Create and run scheduled task
+        $taskName = "NpcapInstallTask_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+        InfoMessage "Creating scheduled task: $taskName"
+        
+        # Create the scheduled task to run immediately in interactive session
+        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$taskScriptPath`""
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(5)
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+        
+        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+        InfoMessage "Scheduled task created and will start in 5 seconds..."
+        
+        # Monitor the task execution
+        Start-Sleep -Seconds 10
+        
+        $timeout = 120  # 2 minutes timeout
+        $elapsed = 0
+        $taskCompleted = $false
+        
+        while ($elapsed -lt $timeout -and -not $taskCompleted) {
+            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+            if ($task) {
+                $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue
+                if ($taskInfo -and $null -ne $taskInfo.LastTaskResult) {
+                    $taskCompleted = $true
+                    InfoMessage "Task completed with result: $($taskInfo.LastTaskResult)"
+                }
+            }
+            
+            # Show log content if available
+            if (Test-Path $logPath) {
+                $logContent = Get-Content $logPath -Tail 5 -ErrorAction SilentlyContinue
+                if ($logContent) {
+                    InfoMessage "Recent log: $($logContent -join ' | ')"
+                }
+            }
+            
+            Start-Sleep -Seconds 5
+            $elapsed += 5
+            InfoMessage "Monitoring task... ($elapsed/$timeout seconds)"
+        }
+        
+        # Cleanup
+        try {
+            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+            Remove-Item $taskScriptPath -Force -ErrorAction SilentlyContinue
+            InfoMessage "Cleaned up scheduled task and script"
+        } catch {
+            WarnMessage "Could not cleanup task: $($_.Exception.Message)"
+        }
+        
+        # Check if installation was successful
+        Start-Sleep -Seconds 5
+        if (Test-NpcapInstalled) {
+            SuccessMessage "Npcap installation completed successfully via scheduled task"
+            return $true
+        } else {
+            ErrorMessage "Npcap installation failed via scheduled task"
+            return $false
+        }
+        
+    } catch {
+        ErrorMessage "Scheduled task installation failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 # Wait for installer processes to complete
 function Wait-ForInstallerCompletion {
     InfoMessage "Waiting for Npcap installer to complete..."
@@ -246,6 +426,12 @@ function Install-NpcapAutomated {
     if (-not $installerPath) {
         ErrorMessage "Cannot proceed without Npcap installer"
         return $false
+    }
+    
+    # Check if running in SSH session and use appropriate method
+    if (Test-SSHSession) {
+        WarnMessage "SSH session detected - using scheduled task method for GUI automation"
+        return Install-NpcapViaScheduledTask
     }
     
     InfoMessage "Starting Npcap installer with keyboard automation..."
