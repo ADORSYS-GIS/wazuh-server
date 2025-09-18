@@ -219,68 +219,98 @@ Start-Transcript -Path '$logPath' -Append
 Write-Host "Starting Npcap installation via scheduled task..."
 
 try {
-    # Load the automation functions
-    `$global:NpcapConfig = @{
-        TempDir = "C:\Temp"
-        InstallerPath = "$($global:NpcapConfig.InstallerPath)"
-        InstallPath = "C:\Program Files\Npcap"
-        MaxWaitTime = 45
+    Write-Host "Attempting multiple installation methods..."
+    
+    # Method 1: Try native silent flags first
+    Write-Host "Method 1: Trying native silent installation..."
+    `$process1 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/S', '/winpcap-mode' -Wait -PassThru -NoNewWindow
+    Write-Host "Silent install exit code: `$(`$process1.ExitCode)"
+    
+    if (`$process1.ExitCode -eq 0) {
+        Write-Host "Silent installation succeeded"
+        exit 0
     }
+    
+    # Method 2: Try with /VERYSILENT flag
+    Write-Host "Method 2: Trying /VERYSILENT installation..."
+    `$process2 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru -NoNewWindow
+    Write-Host "Very silent install exit code: `$(`$process2.ExitCode)"
+    
+    if (`$process2.ExitCode -eq 0) {
+        Write-Host "Very silent installation succeeded"
+        exit 0
+    }
+    
+    # Method 3: Try automated GUI approach with better error handling
+    Write-Host "Method 3: Trying GUI automation with enhanced error handling..."
     
     # Start the installer process
     `$process = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -PassThru -ErrorAction Stop
     Write-Host "Npcap installer started (PID: `$(`$process.Id))"
     
     # Wait for installer window to appear
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 8
     
-    # Load Windows Forms for SendKeys
-    Add-Type -AssemblyName System.Windows.Forms
-    
-    # Step 1: Press Enter to start installation
-    Write-Host "Step 1: Starting installation..."
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-    Start-Sleep -Seconds 10
-    
-    # Step 2: Navigate through default options (25 second wait)
-    Write-Host "Step 2: Navigating default options..."
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-    Start-Sleep -Seconds 25
-    
-    # Step 3: Accept license agreement
-    Write-Host "Step 3: Accepting license..."
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-    Start-Sleep -Seconds 10
-    
-    # Step 4: Proceed with installation options
-    Write-Host "Step 4: Installation options..."
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-    Start-Sleep -Seconds 10
-    
-    # Step 5: Start installation
-    Write-Host "Step 5: Starting installation process..."
-    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-    Start-Sleep -Seconds 10
-    
-    # Wait for installation to complete
-    Write-Host "Waiting for installation to complete..."
-    `$waitTime = 0
-    while (`$waitTime -lt 45 -and -not `$process.HasExited) {
-        Start-Sleep -Seconds 2
-        `$waitTime += 2
-        Write-Host "Waiting... `$waitTime seconds"
-    }
-    
-    if (`$process.HasExited) {
-        Write-Host "Installation completed successfully"
-        exit 0
-    } else {
-        Write-Host "Installation timed out"
+    # Load Windows Forms for SendKeys with error handling
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        Write-Host "Windows Forms loaded successfully"
+        
+        # Enhanced SendKeys with error handling
+        for (`$step = 1; `$step -le 6; `$step++) {
+            try {
+                Write-Host "Step `$step`: Sending Enter key..."
+                [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+                
+                # Variable wait times based on step
+                `$waitTime = switch (`$step) {
+                    1 { 10 }  # Initial start
+                    2 { 25 }  # Default options (longer wait)
+                    3 { 10 }  # License
+                    4 { 10 }  # Options
+                    5 { 15 }  # Start install
+                    6 { 5 }   # Final step
+                }
+                
+                Write-Host "Waiting `$waitTime seconds after step `$step..."
+                Start-Sleep -Seconds `$waitTime
+                
+                # Check if process still exists
+                if (`$process.HasExited) {
+                    Write-Host "Process exited during step `$step"
+                    break
+                }
+                
+            } catch {
+                Write-Host "Error in step `$step`: `$(`$_.Exception.Message)"
+            }
+        }
+        
+        # Wait for installation to complete
+        Write-Host "Waiting for installation to complete..."
+        `$waitTime = 0
+        while (`$waitTime -lt 60 -and -not `$process.HasExited) {
+            Start-Sleep -Seconds 3
+            `$waitTime += 3
+            Write-Host "Waiting... `$waitTime seconds (Process still running)"
+        }
+        
+        if (`$process.HasExited) {
+            Write-Host "Installation process completed with exit code: `$(`$process.ExitCode)"
+            exit 0
+        } else {
+            Write-Host "Installation timed out after 60 seconds"
+            try { `$process.Kill() } catch { }
+            exit 1
+        }
+        
+    } catch {
+        Write-Host "SendKeys method failed: `$(`$_.Exception.Message)"
         exit 1
     }
     
 } catch {
-    Write-Host "Error during installation: `$(`$_.Exception.Message)"
+    Write-Host "All installation methods failed: `$(`$_.Exception.Message)"
     exit 1
 } finally {
     Stop-Transcript
@@ -296,10 +326,19 @@ try {
         InfoMessage "Creating scheduled task: $taskName"
         
         # Create the scheduled task to run immediately in interactive session
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$taskScriptPath`""
+        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$taskScriptPath`""
         $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(5)
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+        
+        # Try to run as current user first, fallback to SYSTEM
+        try {
+            $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+            $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Highest
+            InfoMessage "Creating task to run as current user: $currentUser"
+        } catch {
+            $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+            InfoMessage "Fallback to SYSTEM account"
+        }
         
         Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
         InfoMessage "Scheduled task created and will start in 5 seconds..."
@@ -310,6 +349,7 @@ try {
         $timeout = 120  # 2 minutes timeout
         $elapsed = 0
         $taskCompleted = $false
+        $taskResult = $null
         
         while ($elapsed -lt $timeout -and -not $taskCompleted) {
             $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
@@ -317,7 +357,8 @@ try {
                 $taskInfo = Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue
                 if ($taskInfo -and $null -ne $taskInfo.LastTaskResult) {
                     $taskCompleted = $true
-                    InfoMessage "Task completed with result: $($taskInfo.LastTaskResult)"
+                    $taskResult = $taskInfo.LastTaskResult
+                    InfoMessage "Task completed with result: $taskResult"
                 }
             }
             
@@ -329,9 +370,11 @@ try {
                 }
             }
             
-            Start-Sleep -Seconds 5
-            $elapsed += 5
-            InfoMessage "Monitoring task... ($elapsed/$timeout seconds)"
+            if (-not $taskCompleted) {
+                Start-Sleep -Seconds 5
+                $elapsed += 5
+                InfoMessage "Monitoring task... ($elapsed/$timeout seconds)"
+            }
         }
         
         # Cleanup
@@ -343,14 +386,38 @@ try {
             WarnMessage "Could not cleanup task: $($_.Exception.Message)"
         }
         
-        # Check if installation was successful
+        # Check if installation was successful based on task result and verification
         Start-Sleep -Seconds 5
-        if (Test-NpcapInstalled) {
-            SuccessMessage "Npcap installation completed successfully via scheduled task"
-            return $true
+        
+        # Show full log for debugging
+        if (Test-Path $logPath) {
+            $fullLog = Get-Content $logPath -ErrorAction SilentlyContinue
+            if ($fullLog) {
+                InfoMessage "Full installation log:"
+                foreach ($line in $fullLog) {
+                    InfoMessage "LOG: $line"
+                }
+            }
+        }
+        
+        # Check task result (0 = success)
+        if ($taskResult -eq 0) {
+            if (Test-NpcapInstalled) {
+                SuccessMessage "Npcap installation completed successfully via scheduled task"
+                return $true
+            } else {
+                ErrorMessage "Task reported success but Npcap verification failed"
+                return $false
+            }
         } else {
-            ErrorMessage "Npcap installation failed via scheduled task"
-            return $false
+            ErrorMessage "Scheduled task failed with exit code: $taskResult"
+            # Still check if installation actually worked despite error code
+            if (Test-NpcapInstalled) {
+                WarnMessage "Task failed but Npcap appears to be installed correctly"
+                return $true
+            } else {
+                return $false
+            }
         }
         
     } catch {
