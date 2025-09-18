@@ -267,7 +267,7 @@ enable_repo() {
       return 1
   fi
 
-  if ! maybe_sudo "$PACKAGE_MANAGER" update; then
+  if ! maybe_sudo "$PACKAGE_MANAGER" update -y; then
       error_message "Failed to update package manager cache"
       return 1
   fi
