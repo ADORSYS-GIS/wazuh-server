@@ -223,22 +223,66 @@ try {
     
     # Method 1: Try native silent flags first
     Write-Host "Method 1: Trying native silent installation..."
-    `$process1 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/S', '/winpcap-mode' -Wait -PassThru -NoNewWindow
-    Write-Host "Silent install exit code: `$(`$process1.ExitCode)"
-    
-    if (`$process1.ExitCode -eq 0) {
-        Write-Host "Silent installation succeeded"
-        exit 0
+    try {
+        `$process1 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/S', '/winpcap-mode' -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        Write-Host "Silent install exit code: `$(`$process1.ExitCode)"
+        
+        if (`$process1.ExitCode -eq 0) {
+            Write-Host "Method 1: Silent installation succeeded"
+            exit 0
+        } else {
+            Write-Host "Method 1: Silent installation failed with exit code `$(`$process1.ExitCode)"
+        }
+    } catch {
+        Write-Host "Method 1: Silent installation threw exception: `$(`$_.Exception.Message)"
     }
     
     # Method 2: Try with /VERYSILENT flag
     Write-Host "Method 2: Trying /VERYSILENT installation..."
-    `$process2 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru -NoNewWindow
-    Write-Host "Very silent install exit code: `$(`$process2.ExitCode)"
+    try {
+        `$process2 = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        Write-Host "Very silent install exit code: `$(`$process2.ExitCode)"
+        
+        if (`$process2.ExitCode -eq 0) {
+            Write-Host "Method 2: Very silent installation succeeded"
+            exit 0
+        } else {
+            Write-Host "Method 2: Very silent installation failed with exit code `$(`$process2.ExitCode)"
+        }
+    } catch {
+        Write-Host "Method 2: Very silent installation threw exception: `$(`$_.Exception.Message)"
+    }
     
-    if (`$process2.ExitCode -eq 0) {
-        Write-Host "Very silent installation succeeded"
-        exit 0
+    # Method 2b: Try alternative silent flags
+    Write-Host "Method 2b: Trying alternative silent flags..."
+    try {
+        `$process2b = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -ArgumentList '/SILENT', '/NORESTART' -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        Write-Host "Alternative silent install exit code: `$(`$process2b.ExitCode)"
+        
+        if (`$process2b.ExitCode -eq 0) {
+            Write-Host "Method 2b: Alternative silent installation succeeded"
+            exit 0
+        } else {
+            Write-Host "Method 2b: Alternative silent installation failed with exit code `$(`$process2b.ExitCode)"
+        }
+    } catch {
+        Write-Host "Method 2b: Alternative silent installation threw exception: `$(`$_.Exception.Message)"
+    }
+    
+    # Method 2c: Try with no arguments (sometimes works)
+    Write-Host "Method 2c: Trying installer with no arguments..."
+    try {
+        `$process2c = Start-Process -FilePath '$($global:NpcapConfig.InstallerPath)' -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        Write-Host "No arguments install exit code: `$(`$process2c.ExitCode)"
+        
+        if (`$process2c.ExitCode -eq 0) {
+            Write-Host "Method 2c: No arguments installation succeeded"
+            exit 0
+        } else {
+            Write-Host "Method 2c: No arguments installation failed with exit code `$(`$process2c.ExitCode)"
+        }
+    } catch {
+        Write-Host "Method 2c: No arguments installation threw exception: `$(`$_.Exception.Message)"
     }
     
     # Method 3: Try automated GUI approach with better error handling
