@@ -1,26 +1,28 @@
-# Wazuh Agent Setup
+# Wazuh Server Endpoint Setup
 
-[![Release Client](https://github.com/ADORSYS-GIS/wazuh-cert-oauth2/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/ADORSYS-GIS/wazuh-cert-oauth2/actions/workflows/release.yml)
+[![Release Client](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml/badge.svg?branch=main)](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml)
 
 
-This repository provides an automated setup script for installing the Wazuh Agent along with essential security tools, **Yara** and **Snort**. This setup enables real-time monitoring, intrusion detection, and malware scanning, integrating Wazuh with powerful security utilities.
+This repository provides an automated setup script for installing the Wazuh Agent along with essential security tools, **Yara** and **Suricat** or **Snort**. This setup enables real-time monitoring, intrusion detection, and malware scanning, integrating Wazuh with powerful security utilities.
 
 ## Key Features
 - **Automated Installation:** Quick setup of Wazuh agent and dependencies.
 
 - **Cross-Platform Support:** Compatible with Ubuntu, macOS, and Windows.
 
-- **Security Tools Integration:** Pre-configured with Yara and Snort for enhanced threat detection.
+- **Security Tools Integration:** Pre-configured with Yara and Suricata or Snort for enhanced threat detection.
 
 ## Supported Operating Systems
-- **Ubuntu**
-- **MacOS** 
-- **Windows**
+- **Ubuntu Server**
+- **Debian**
+- **Centos**
+- **RHEL** 
+- **Windows Server**
 
 
 ## Installation
 
-### Wazuh Agent Enrollment Guide
+### Wazuh Server Enrollment Guide
 This guide provides instructions to enroll Wazuh agents on various platforms, integrating them with the Wazuh Manager for enhanced monitoring and security. Additionally, it automates the installation of tools like Yara and Snort to augment security capabilities.
 
 ### Introduction
@@ -51,7 +53,7 @@ This repository includes several scripts for configuring and deploying Wazuh and
 
 - **Yara:** Scans files for malware signatures, forwarding results to the Wazuh Manager for correlation and alerting.
 
-- **Snort:** Monitors network traffic to identify potential intrusions, with alerts sent to Wazuh for comprehensive threat analysis.
+- **Suricata** or **Snort:** Monitors network traffic to identify potential intrusions, with alerts sent to Wazuh for comprehensive threat analysis. **Suricata** can also serve as an **IPS** and is the one installed by default, but in **IDS** mode
 
 ### Troubleshooting
 Ensure the necessary environment variables (e.g., WAZUH_AGENT_NAME) are set correctly before running the scripts to avoid installation issues or misconfigurations. Proper configurations will help ensure reliable and secure operation across different environments.
