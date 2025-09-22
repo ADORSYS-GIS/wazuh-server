@@ -21,6 +21,7 @@ OSSEC_CONF_PATH="$OSSEC_PATH/ossec.conf"
 
 WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
 WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
@@ -89,8 +90,8 @@ info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
-curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/deps.sh" > "$TMP_FOLDER/install-deps.sh"
-curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
+curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/scripts/deps.sh" > "$TMP_FOLDER/install-deps.sh"
+curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
 
 # Step 0: Install dependencies
 info_message "Installing dependencies"
@@ -118,7 +119,7 @@ fi
 
 # Step 3: Download version file
 info_message "Downloading version file..."
-if ! (maybe_sudo curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/version.txt" -o "$OSSEC_PATH/version.txt") 2>&1; then
+if ! (maybe_sudo curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/version.txt" -o "$OSSEC_PATH/version.txt") 2>&1; then
     error_message "Failed to download version file"
     exit 1
 fi

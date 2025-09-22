@@ -12,6 +12,8 @@ fi
 # ==============================================================================
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
+
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
 
@@ -79,7 +81,7 @@ info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
-curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/redhat-support/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server.sh"
+curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-wazuh-server.sh"
 
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
