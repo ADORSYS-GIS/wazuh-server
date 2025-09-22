@@ -81,29 +81,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ==============================================================================
-# Argument Parsing
-# ==============================================================================
-
-while getopts "th" opt; do
-    case ${opt} in
-        t) INSTALL_TRIVY="TRUE" ;;
-        h) 
-            echo -e "${BOLD}Wazuh Server Installation Script${NORMAL}"
-            echo ""
-            echo -e "${BOLD}DESCRIPTION:${NORMAL}"
-            echo "  This script automates the setup of a Wazuh server with core components."
-            echo ""
-            echo -e "${BOLD}USAGE:${NORMAL}"
-            echo "  ./setup-server.sh [-t] [-h]"
-            echo ""
-            echo -e "${BOLD}OPTIONS:${NORMAL}"
-            echo -e "  ${YELLOW}-t${NORMAL}         Optionally install ${BOLD}Trivy${NORMAL} for vulnerability scanning."
-            echo -e "  ${YELLOW}-h${NORMAL}         Display this help message and exit."
-            exit 0 ;;
-        \?) error_message "Invalid option: -$OPTARG" >&2; exit 1 ;;
-    esac
-done
 
 # ==============================================================================
 # Main Installation Logic

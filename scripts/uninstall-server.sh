@@ -73,26 +73,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-while getopts "th" opt; do
-    case ${opt} in
-        t) UNINSTALL_TRIVY="TRUE" ;;
-        h) 
-            echo -e "${BOLD}Wazuh Server Uninstallation Script${NORMAL}"
-            echo ""
-            echo -e "${BOLD}DESCRIPTION:${NORMAL}"
-            echo "  This script automates the removal of Wazuh server components."
-            echo ""
-            echo -e "${BOLD}USAGE:${NORMAL}"
-            echo "  ./uninstall-server.sh [-t] [-h]"
-            echo ""
-            echo -e "${BOLD}OPTIONS:${NORMAL}"
-            echo -e "  ${YELLOW}-t${NORMAL}         Optionally uninstall ${BOLD}Trivy${NORMAL}."
-            echo -e "  ${YELLOW}-h${NORMAL}         Display this help message and exit."
-            exit 0 ;;
-        \?) error_message "Invalid option: -$OPTARG" >&2; exit 1 ;;
-    esac
-done
-
 # ==============================================================================
 # Main Uninstallation Logic
 # ==============================================================================
