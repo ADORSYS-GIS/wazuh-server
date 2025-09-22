@@ -66,10 +66,10 @@ command_exists() {
 OS_NAME=$(uname -s)
 case "$OS_NAME" in
     "Linux")
-        if command_exists apt-get; then
+        if command_exists apt; then
             info_message "Detected Debian/Ubuntu-based system"
-            maybe_sudo apt-get update
-            maybe_sudo apt-get install -y curl jq
+            maybe_sudo apt update
+            maybe_sudo apt install -y curl jq
         elif command_exists yum; then
             info_message "Detected Red Hat/CentOS-based system"
             maybe_sudo yum install -y curl jq

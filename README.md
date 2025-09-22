@@ -2,7 +2,7 @@
 
 [![Release Client](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml/badge.svg?branch=main)](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml)
 
-This repository provides an automated setup script for installing the Wazuh Agent along with essential security tools, **Yara** and **Suricata** or **Snort**. This setup enables real-time monitoring, intrusion detection, and malware scanning, integrating Wazuh with powerful security utilities.
+
 
 ## Key Features
 
@@ -13,6 +13,7 @@ This repository provides an automated setup script for installing the Wazuh Agen
 - **Security Tools Integration:** Pre-configured with Yara and Suricata or Snort for enhanced threat detection.
 
 ## Supported Operating Systems
+
 
 - **Ubuntu Server**
 - **Debian**
