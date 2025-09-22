@@ -231,7 +231,7 @@ function Install-VCppRedistributable {
         InfoMessage "[STEP 2/3] Downloading and installing Visual C++ Redistributable..."
         $vcRedistPath = "$env:TEMP\vc_redist.x64.exe"
         
-        Invoke-WebRequest -Uri "https://aka.ms/vs/16/release/vc_redist.x64.exe" -OutFile $vcRedistPath -ErrorAction Stop
+        Invoke-WebRequest -Uri "https://download.microsoft.com/download/9/3/F/93FCF1E7-E6A4-478B-96E7-D4B285925B00/vc_redist.x64.exe" -OutFile $vcRedistPath -ErrorAction Stop
         InfoMessage "Download completed. File size: $((Get-Item $vcRedistPath).Length) bytes"
         
         $installProcess = Start-Process -FilePath $vcRedistPath -ArgumentList "/quiet", "/install" -Wait -PassThru -ErrorAction Stop
