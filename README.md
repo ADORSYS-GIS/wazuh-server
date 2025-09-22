@@ -32,7 +32,7 @@ Wazuh agents collect and transmit security data from endpoints to the Wazuh Mana
 
 - [Linux Enrollment Guide](/Agent%20Enrollment/linux-agent.md)
 - [MacOS Enrollment Guide](/Agent%20Enrollment/macos-agent.md)
-- [Windows Server Enrollment Guide](/Agent%20Enrollment/windows-server.md)
+- [Windows Enrollment Guide](/Agent%20Enrollment/windows-agent.md)
 
 ## Additional Notes
 
@@ -48,7 +48,7 @@ This repository includes several scripts for configuring and deploying Wazuh and
 
 - **setup-agent.sh:** Combines both dependency installation and agent setup into a single streamlined process, allowing you to set up everything with one command on Linux/macOS.
 
-- **setup-server.ps1:** Installs the Wazuh Agent, Yara, and Snort on Windows. It configures the agent to communicate with the Wazuh Manager and integrates essential logging and alerting functions.
+- **setup-agent.ps1:** Installs the Wazuh Agent, Yara, and Snort on Windows. It configures the agent to communicate with the Wazuh Manager and integrates essential logging and alerting functions.
 
 - **install.ps1:** Manages the entire Wazuh Agent installation process on Windows, including error-handling and logging. This script checks dependencies and manages the full setup process, from configuration to package management.
 
