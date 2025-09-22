@@ -1,6 +1,6 @@
-# Optimized Wazuh Server Setup Script for Silent Windows Server Environments
-# This version focuses on dependencies, Suricata, and Npcap installation only
-# Simplified from the original multi-component setup script
+# Streamlined Wazuh Server Setup Script for Silent Windows Server Environments
+# Core components: Dependencies, Wazuh Agent, and OAuth2 Certificate Authentication
+# Optimized for SSH compatibility and minimal installation footprint
 
 #Requires -RunAsAdministrator
 
@@ -22,10 +22,7 @@ $RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main"
 $VERSION_FILE_URL = "$RepoUrl/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 $TEMP_DIR = [System.IO.Path]::GetTempPath()
-$WAZUH_YARA_VERSION = if ($env:WAZUH_YARA_VERSION) { $env:WAZUH_YARA_VERSION } else { "0.3.11" }
-$WAZUH_SNORT_VERSION = if ($env:WAZUH_SNORT_VERSION) { $env:WAZUH_SNORT_VERSION } else { "0.2.4" }
 $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
-$WAZUH_SURICATA_VERSION = if ($env:WAZUH_SURICATA_VERSION) { $env:WAZUH_SURICATA_VERSION } else { "0.1.4" }
 
 # Global array to track installer files
 $global:InstallerFiles = @()
@@ -139,44 +136,6 @@ function Install-OAuth2Client {
     }
 }
 
-# Step 4: Download and install YARA with error handling
-function Install-Yara {
-    $YaraUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.ps1"
-    $YaraScript = "$env:TEMP\install_yara.ps1"
-    $global:InstallerFiles += $YaraScript
-
-    try {
-        InfoMessage "Downloading and executing YARA installation script..."
-        Invoke-WebRequest -Uri $YaraUrl -OutFile $YaraScript -ErrorAction Stop
-        InfoMessage "YARA installation script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $YaraScript -ErrorAction Stop
-        SuccessMessage "YARA installed successfully"
-    }
-    catch {
-        ErrorMessage "Error during YARA installation: $($_.Exception.Message)"
-        throw
-    }
-}
-
-
-# Step 6: Download and execute Silent Suricata installation (includes Npcap)
-function Install-SuricataWithNpcap {
-    $SuricataURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feature/silent-windows-server-scripts/scripts/install-suricata-silent.ps1"
-    $SuricataPath = "$env:TEMP\install-suricata-silent.ps1"
-    $global:InstallerFiles += $SuricataPath
-
-    try {
-        InfoMessage "Downloading and executing Silent Suricata installation script (includes automated Npcap)..."
-        Invoke-WebRequest -Uri $SuricataURL -OutFile $SuricataPath -ErrorAction Stop
-        InfoMessage "Silent Suricata script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $SuricataPath -ErrorAction Stop
-        SuccessMessage "Suricata and Npcap installed successfully"
-    }
-    catch {
-        ErrorMessage "Error during Suricata installation: $($_.Exception.Message)"
-        throw
-    }
-}
 
 function DownloadVersionFile {
     InfoMessage "Downloading version file..."
@@ -196,29 +155,27 @@ function DownloadVersionFile {
 function Show-Help {
     Write-Host "Usage:  .\setup-server.ps1 [-Help]" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "This script automates the complete installation of Wazuh Agent and security components for Windows Server environments." -ForegroundColor Cyan
+    Write-Host "This script automates the streamlined installation of core Wazuh Agent components for Windows Server environments." -ForegroundColor Cyan
+    Write-Host "Optimized for SSH compatibility and minimal installation footprint." -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Components Installed:" -ForegroundColor Cyan
-    Write-Host "  - Dependencies (curl, jq, chocolatey, etc.) - SILENT" -ForegroundColor Cyan
-    Write-Host "  - Wazuh Agent - SILENT" -ForegroundColor Cyan
-    Write-Host "  - OAuth2 Certificate Authentication - SILENT" -ForegroundColor Cyan
-    Write-Host "  - YARA malware detection - SILENT" -ForegroundColor Cyan
-    Write-Host "" -ForegroundColor Cyan
-    Write-Host "  - Suricata IDS with automated Npcap - SILENT" -ForegroundColor Cyan
+    Write-Host "Components installed:" -ForegroundColor Yellow
+    Write-Host "  - Dependencies (curl, jq, chocolatey, etc.)" -ForegroundColor White
+    Write-Host "  - Wazuh Agent with silent installation" -ForegroundColor White
+    Write-Host "  - OAuth2 Certificate Authentication" -ForegroundColor White
     Write-Host ""
-    Write-Host "Parameters:" -ForegroundColor Cyan
-    Write-Host "  -Help              : Displays this help message." -ForegroundColor Cyan
+    Write-Host "Requirements:" -ForegroundColor Yellow
+    Write-Host "  - Administrator privileges" -ForegroundColor White
+    Write-Host "  - Internet connectivity" -ForegroundColor White
+    Write-Host "  - Windows Server 2016+ or Windows 10+" -ForegroundColor White
     Write-Host ""
-    Write-Host "Environment Variables (optional):" -ForegroundColor Cyan
-    Write-Host "  LOG_LEVEL          : Sets the logging level (e.g., INFO, DEBUG). Default: INFO" -ForegroundColor Cyan
-    Write-Host "  APP_NAME           : Sets the application name. Default: wazuh-cert-oauth2-client" -ForegroundColor Cyan
-    Write-Host "  WAZUH_MANAGER      : Sets the Wazuh Manager address. Default: wazuh.example.com" -ForegroundColor Cyan
-    Write-Host "  WAZUH_AGENT_VERSION: Sets the Wazuh Agent version. Default: 4.12.0-1" -ForegroundColor Cyan
-    Write-Host "  WAZUH_YARA_VERSION : Sets the Wazuh YARA module version. Default: 0.3.11" -ForegroundColor Cyan
-    Write-Host "  WAZUH_SURICATA_VERSION: Sets the Wazuh Suricata module version. Default: 0.1.4" -ForegroundColor Cyan
-    Write-Host "" -ForegroundColor Cyan
-    Write-Host "  WOPS_VERSION       : Sets the WOPS client version. Default: 0.2.18" -ForegroundColor Cyan
+    Write-Host "Parameters:" -ForegroundColor Yellow
+    Write-Host "  -Help    Show this help message" -ForegroundColor White
     Write-Host ""
+    Write-Host "Example:" -ForegroundColor Yellow
+    Write-Host "  .\setup-server.ps1" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Note: This streamlined version focuses on core SIEM functionality." -ForegroundColor Yellow
+    Write-Host "For network monitoring (Suricata/Npcap), use the dedicated installation scripts." -ForegroundColor Yellow
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\setup-server.ps1" -ForegroundColor Cyan
     Write-Host "  $env:LOG_LEVEL='DEBUG'; .\setup-server.ps1" -ForegroundColor Cyan
@@ -233,8 +190,9 @@ if ($Help) {
 
 # Main Execution wrapped in a try-finally to ensure cleanup runs even if errors occur.
 try {
-    InfoMessage "=== COMPLETE Wazuh Agent Setup for Silent Windows Server Environments ==="
-    InfoMessage "Installing: Dependencies + Wazuh Agent + OAuth2 Auth + YARA + Suricata + Npcap"
+    InfoMessage "=== Streamlined Wazuh Agent Setup for Silent Windows Server Environments ==="
+    InfoMessage "Installing: Dependencies + Wazuh Agent + OAuth2 Certificate Authentication"
+    InfoMessage "Optimized for SSH compatibility and minimal installation footprint"
     
     SectionSeparator "Installing Dependencies"
     Install-Dependencies
@@ -245,23 +203,18 @@ try {
     SectionSeparator "Installing OAuth2 Certificate Authentication"
     Install-OAuth2Client
     
-    SectionSeparator "Installing YARA Malware Detection"
-    Install-Yara
-    
-    SectionSeparator "Installing Suricata IDS with Automated Npcap"
-    Install-SuricataWithNpcap
-    
     SectionSeparator "Downloading Version File"
     DownloadVersionFile
     
-    SuccessMessage "=== COMPLETE Wazuh Agent Setup Completed Successfully ==="
-    InfoMessage "All components installed and configured:"
+    SuccessMessage "=== Streamlined Wazuh Agent Setup Completed Successfully ==="
+    InfoMessage "Core components installed and configured:"
     InfoMessage "  [+] Dependencies (curl, jq, chocolatey, etc.)"
     InfoMessage "  [+] Wazuh Agent with silent installation"
     InfoMessage "  [+] OAuth2 Certificate Authentication"
-    InfoMessage "  [+] YARA malware detection engine"
-    InfoMessage "  [+] Suricata IDS with automated Npcap (no GUI)"
     InfoMessage "  [+] All services configured for automatic startup"
+    InfoMessage ""
+    InfoMessage "This streamlined setup focuses on core SIEM functionality without network monitoring."
+    InfoMessage "For network monitoring (Suricata/Npcap), use the full installation scripts separately."
 }
 catch {
     ErrorMessage "Setup failed: $($_.Exception.Message)"
