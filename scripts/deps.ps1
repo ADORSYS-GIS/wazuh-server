@@ -218,12 +218,21 @@ function Install-GnuSed {
 function Install-VCppRedistributable {
     InfoMessage "[STEP 1/3] Checking Visual C++ Redistributable installation status..."
     
-    $vcppKey = "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
-    if (Test-Path $vcppKey) {
-        $vcppInstalled = Get-ItemProperty -Path $vcppKey
-        if ($vcppInstalled -and $vcppInstalled.Installed -eq 1) {
-            InfoMessage "Visual C++ Redistributable is already installed. Version: $($vcppInstalled.Version)" 
-            return $true
+    # Check multiple possible registry locations
+    $vcppKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
+        "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64"
+    )
+    
+    foreach ($vcppKey in $vcppKeys) {
+        if (Test-Path $vcppKey) {
+            $vcppInstalled = Get-ItemProperty -Path $vcppKey
+            if ($vcppInstalled -and $vcppInstalled.Installed -eq 1) {
+                InfoMessage "Visual C++ Redistributable is already installed. Version: $($vcppInstalled.Version)" 
+                return $true
+            }
         }
     }
     
@@ -244,12 +253,14 @@ function Install-VCppRedistributable {
         }
         
         InfoMessage "[STEP 3/3] Verifying Visual C++ Redistributable installation..."
-        # Re-check installation
-        if (Test-Path $vcppKey) {
-            $vcppInstalled = Get-ItemProperty -Path $vcppKey
-            if ($vcppInstalled -and $vcppInstalled.Installed -eq 1) {
-                SuccessMessage "Visual C++ Redistributable installation completed and verified successfully."
-                return $true
+        # Re-check installation using multiple registry locations
+        foreach ($vcppKey in $vcppKeys) {
+            if (Test-Path $vcppKey) {
+                $vcppInstalled = Get-ItemProperty -Path $vcppKey
+                if ($vcppInstalled -and $vcppInstalled.Installed -eq 1) {
+                    SuccessMessage "Visual C++ Redistributable installation completed and verified successfully."
+                    return $true
+                }
             }
         }
         
