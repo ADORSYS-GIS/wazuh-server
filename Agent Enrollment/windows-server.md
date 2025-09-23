@@ -30,19 +30,12 @@ Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-serv
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1"
 ```
 
-**NB:** You have other components that can be installed from this script, to know of them and how to install then run this command
-
-```powershell
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.2-rc1/scripts/setup-server.ps1' `
-  -UseBasicParsing -OutFile "$env:TEMP\setup-server.ps1"; `
-PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1" -Help
-```
-
 ### Step 2: Streamlined Installation Process
 
 **Note:** This installation is fully automated and silent - no GUI interactions required!
 
 The streamlined script will automatically install:
+
 - **Core dependencies:** curl and jq only
 - **Wazuh Agent:** Latest version with silent installation
 - **Configuration:** Automatic manager connection setup
