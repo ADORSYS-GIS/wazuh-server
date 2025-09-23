@@ -25,6 +25,48 @@ WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
+INSTALL_CERT_OAUTH2="FALSE"
+
+# Parse command line options
+while getopts ":hc" opt; do
+  case $opt in
+    c) INSTALL_CERT_OAUTH2="TRUE"
+    ;;
+    h) echo "Usage: $0 [-c] [-h]"
+       echo ""
+       echo "Streamlined Wazuh Agent installation for Linux servers"
+       echo ""
+       echo "Options:"
+       echo "  -c    Install cert-oauth2 client (optional)"
+       echo "  -h    Show this help message"
+       echo ""
+       echo "Environment Variables:"
+       echo "  WAZUH_MANAGER         Wazuh manager hostname (default: wazuh.example.com)"
+       echo "  WAZUH_AGENT_VERSION   Wazuh agent version (default: 4.12.0-1)"
+       echo "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.1)"
+       echo "  LOG_LEVEL            Logging level (default: INFO)"
+       echo ""
+       echo "Examples:"
+       echo "  $0                    # Core installation only"
+       echo "  $0 -c                 # With cert-oauth2"
+       echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
+       echo ""
+       exit 0
+    ;;
+    \?) echo "Invalid option: -$OPTARG" >&2
+        echo "Use -h for help"
+        exit 1
+    ;;
+  esac
+done
+
+# Check for extra arguments
+shift $((OPTIND - 1))
+if [ $# -gt 0 ]; then
+  echo "Error: Extra arguments provided: $*"
+  echo "Use -h for help"
+  exit 1
+fi
 
 TMP_FOLDER="$(mktemp -d)"
 
@@ -87,6 +129,7 @@ trap cleanup EXIT
 # ==============================================================================
 
 info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
+info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2"
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
@@ -117,7 +160,61 @@ if [ "$INSTALL_TRIVY" = "TRUE" ]; then
     fi
 fi
 
-# Step 3: Download version file
+# Step 3: Install cert-oauth2 if the flag is set
+if [ "$INSTALL_CERT_OAUTH2" = "TRUE" ]; then
+    info_message "Installing cert-oauth2..."
+    
+    # Check if Wazuh Agent is installed first
+    if ! maybe_sudo [ -d "$OSSEC_PATH" ]; then
+        error_message "Wazuh Agent not found at $OSSEC_PATH"
+        error_message "Please install Wazuh Agent first before installing cert-oauth2"
+        exit 1
+    fi
+    
+    # Variables for cert-oauth2
+    WOPS_VERSION=${WOPS_VERSION:-"0.2.18"}
+    APP_NAME=${APP_NAME:-"wazuh-cert-oauth2-client"}
+    
+    info_message "Downloading cert-oauth2 installation script..."
+    info_message "Version: $WOPS_VERSION"
+    
+    OAUTH2_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.sh"
+    OAUTH2_SCRIPT="$TMP_FOLDER/cert-oauth2-install.sh"
+    
+    if ! curl -SL -s "$OAUTH2_URL" -o "$OAUTH2_SCRIPT"; then
+        error_message "Failed to download cert-oauth2 installation script"
+        exit 1
+    fi
+    
+    info_message "cert-oauth2 installation script downloaded successfully"
+    info_message "Installing cert-oauth2 client..."
+    
+    # Make script executable and run it
+    chmod +x "$OAUTH2_SCRIPT"
+    
+    # Export variables for the cert-oauth2 script
+    export LOG_LEVEL
+    export APP_NAME
+    export WOPS_VERSION
+    
+    if ! "$OAUTH2_SCRIPT"; then
+        error_message "cert-oauth2 installation failed"
+        exit 1
+    fi
+    
+    info_message "cert-oauth2 client installed successfully!"
+    
+    # Determine the correct path based on OS
+    if [ "$(uname)" = "Darwin" ]; then
+        OAUTH2_CLIENT_PATH="/Library/Ossec/bin/wazuh-cert-oauth2-client"
+    else
+        OAUTH2_CLIENT_PATH="/var/ossec/bin/wazuh-cert-oauth2-client"
+    fi
+    
+    info_message "You can now use: sudo $OAUTH2_CLIENT_PATH o-auth2"
+fi
+
+# Step 4: Download version file
 info_message "Downloading version file..."
 if ! (maybe_sudo curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/version.txt" -o "$OSSEC_PATH/version.txt") 2>&1; then
     error_message "Failed to download version file"
