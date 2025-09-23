@@ -16,7 +16,7 @@ $DownloadUrl = "https://packages.wazuh.com/4.x/windows/wazuh-agent-$WAZUH_AGENT_
 $MsiPath = Join-Path -Path $TempDir -ChildPath $AgentFileName
 
 
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main"
+$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main"
 
 
 $APP_LOGO_URL = "$RepoUrl/assets/wazuh-logo.png"
@@ -77,9 +77,22 @@ function ErrorExit {
 }
 
 
+# Function to get installed Wazuh agent version
+function Get-InstalledVersion {
+    try {
+        $wazuhProduct = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*Wazuh Agent*" }
+        if ($wazuhProduct) {
+            return $wazuhProduct.Version
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
 # Function to install Wazuh Agent
 function Install-Agent {
-    InfoMessage "[STEP 1/6] Validating system requirements..."
+    InfoMessage "[STEP 1/7] Validating system requirements..."
     
     # Check if system architecture is supported
     if (-not [System.Environment]::Is64BitOperatingSystem) {
@@ -88,18 +101,21 @@ function Install-Agent {
     }
     InfoMessage "System architecture: 64-bit (supported)"
     
-    # Check if Wazuh agent is already installed
-    $existingService = Get-Service -Name "WazuhSvc" -ErrorAction SilentlyContinue
-    if ($existingService) {
-        InfoMessage "Wazuh agent service already exists. Status: $($existingService.Status)"
-        if ($existingService.Status -eq 'Running') {
-            InfoMessage "Wazuh agent is already installed and running."
+    # Check installed version
+    $installedVersion = Get-InstalledVersion
+    if ($installedVersion) {
+        if ($installedVersion -eq $WAZUH_AGENT_VERSION) {
+            InfoMessage "Wazuh agent $WAZUH_AGENT_VERSION is already installed. Skipping installation."
             return $true
+        } else {
+            InfoMessage "Upgrading Wazuh agent ($installedVersion → $WAZUH_AGENT_VERSION)..."
         }
+    } else {
+        InfoMessage "Installing fresh Wazuh agent $WAZUH_AGENT_VERSION..."
     }
 
 
-    InfoMessage "[STEP 2/6] Downloading Wazuh agent version $WAZUH_AGENT_VERSION..."
+    InfoMessage "[STEP 2/7] Downloading Wazuh agent version $WAZUH_AGENT_VERSION..."
     try {
         Invoke-WebRequest -Uri $DownloadUrl -OutFile $MsiPath -ErrorAction Stop
         InfoMessage "Download completed successfully. File size: $((Get-Item $MsiPath).Length) bytes"
@@ -109,7 +125,7 @@ function Install-Agent {
     }
 
 
-    InfoMessage "[STEP 3/6] Installing Wazuh agent silently..."
+    InfoMessage "[STEP 3/7] Installing Wazuh agent silently..."
     
     # Filling up MSI installer arguments
     $MsiArguments = @(
@@ -135,7 +151,7 @@ function Install-Agent {
     }
 
 
-    InfoMessage "[STEP 4/6] Verifying installation..."
+    InfoMessage "[STEP 4/7] Verifying installation..."
     
     # Verify installation directory exists
     if (-not (Test-Path $OSSEC_PATH)) {
@@ -150,7 +166,7 @@ function Install-Agent {
         return $false
     }
     
-    InfoMessage "[STEP 5/6] Configuring Wazuh manager address..."
+    InfoMessage "[STEP 5/7] Configuring Wazuh manager address..."
     # Update the manager address in the configuration file
     try {
         [xml]$configXml = Get-Content -Path $OSSEC_CONF_PATH -ErrorAction Stop
@@ -162,7 +178,43 @@ function Install-Agent {
         return $false
     }
     
-    InfoMessage "[STEP 6/6] Starting Wazuh service..."
+    InfoMessage "[STEP 6/7] Configuring active response monitoring..."
+    # Add active response log monitoring (matches Linux install.sh functionality)
+    try {
+        [xml]$configXml = Get-Content -Path $OSSEC_CONF_PATH -ErrorAction Stop
+        
+        # Check if active response localfile already exists
+        $activeResponseExists = $false
+        foreach ($localfile in $configXml.ossec_config.localfile) {
+            if ($localfile.location -eq "C:\Program Files (x86)\ossec-agent\active-response\active-responses.log") {
+                $activeResponseExists = $true
+                break
+            }
+        }
+        
+        if (-not $activeResponseExists) {
+            # Create new localfile element for active response logs
+            $newLocalfile = $configXml.CreateElement("localfile")
+            $logFormat = $configXml.CreateElement("log_format")
+            $logFormat.InnerText = "syslog"
+            $location = $configXml.CreateElement("location")
+            $location.InnerText = "C:\Program Files (x86)\ossec-agent\active-response\active-responses.log"
+            
+            $newLocalfile.AppendChild($logFormat)
+            $newLocalfile.AppendChild($location)
+            $configXml.ossec_config.AppendChild($newLocalfile)
+            
+            $configXml.Save($OSSEC_CONF_PATH)
+            InfoMessage "Active response logs are now being monitored"
+        } else {
+            InfoMessage "Active response monitoring already exists in ossec.conf"
+        }
+    } catch {
+        WarnMessage "Failed to configure active response monitoring: $($_.Exception.Message)"
+        # Don't fail installation for this
+    }
+    
+    InfoMessage "[STEP 7/7] Starting Wazuh service..."
     # Start the Wazuh service
     try {
         Start-Service -Name "WazuhSvc" -ErrorAction Stop
