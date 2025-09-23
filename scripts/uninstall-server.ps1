@@ -102,18 +102,18 @@ function Test-WazuhAgentInstalled {
         return $true
     }
     
-    # Check for installed program via registry (faster than WMI)
-    $uninstallKeys = @(
-        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
-        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
-    )
+    # Check for Wazuh configuration file
+    $wazuhConfig = "C:\Program Files (x86)\ossec-agent\ossec.conf"
+    if (Test-Path $wazuhConfig) {
+        InfoMessage "Found Wazuh configuration file"
+        return $true
+    }
     
-    foreach ($key in $uninstallKeys) {
-        $programs = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and $_.DisplayName -like "*Wazuh Agent*" }
-        if ($programs) {
-            InfoMessage "Found Wazuh Agent in registry"
-            return $true
-        }
+    # Check for Wazuh agent process
+    $wazuhProcess = Get-Process -Name "wazuh-agent" -ErrorAction SilentlyContinue
+    if ($wazuhProcess) {
+        InfoMessage "Found Wazuh agent process running"
+        return $true
     }
     
     InfoMessage "No Wazuh Agent installation detected"
