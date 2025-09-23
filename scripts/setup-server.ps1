@@ -133,33 +133,24 @@ function DownloadVersionFile {
 }
 
 function Show-Help {
-    Write-Host "Usage:  .\setup-server.ps1 [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\setup-server.ps1 [-InstallCertOAuth2] [-Help]" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "This script automates the installation of Wazuh Agent for Windows Server environments." -ForegroundColor Cyan
-    Write-Host "Matches the functionality of the Linux setup-server.sh script." -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Components installed:" -ForegroundColor Yellow
-    Write-Host "  - Dependencies (Visual C++, GNU sed, curl, jq)" -ForegroundColor White
-    Write-Host "  - Wazuh Agent with silent installation" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Requirements:" -ForegroundColor Yellow
-    Write-Host "  - Administrator privileges" -ForegroundColor White
-    Write-Host "  - Internet connectivity" -ForegroundColor White
-    Write-Host "  - Windows Server 2016+ or Windows 10+" -ForegroundColor White
+    Write-Host "Streamlined Wazuh Agent installation for Windows Server environments." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
-    Write-Host "  -Help    Show this help message" -ForegroundColor White
+    Write-Host "  -InstallCertOAuth2    Install cert-oauth2 client (optional)" -ForegroundColor White
+    Write-Host "  -Help                 Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Environment Variables:" -ForegroundColor Yellow
     Write-Host "  WAZUH_MANAGER         Wazuh manager hostname (default: wazuh.example.com)" -ForegroundColor White
     Write-Host "  WAZUH_AGENT_VERSION   Agent version (default: 4.12.0-1)" -ForegroundColor White
-    Write-Host "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.1)" -ForegroundColor White
+    Write-Host "  WAZUH_SERVER_TAG      Repository tag (default: $WAZUH_SERVER_TAG)" -ForegroundColor White
     Write-Host "  LOG_LEVEL             Logging level (default: INFO)" -ForegroundColor White
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
-    Write-Host "  .\setup-server.ps1" -ForegroundColor Cyan
-    Write-Host "  $env:WAZUH_MANAGER='my-wazuh.com'; .\setup-server.ps1" -ForegroundColor Cyan
-    Write-Host "  $env:LOG_LEVEL='DEBUG'; .\setup-server.ps1" -ForegroundColor Cyan
+    Write-Host "  .\setup-server.ps1                                    # Core installation only" -ForegroundColor Cyan
+    Write-Host "  .\setup-server.ps1 -InstallCertOAuth2                 # With cert-oauth2" -ForegroundColor Cyan
+    Write-Host "  $env:WAZUH_MANAGER='my-wazuh.com'; .\setup-server.ps1 -InstallCertOAuth2" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -180,13 +171,23 @@ try {
     SectionSeparator "Installing Wazuh Agent"
     Install-WazuhAgent
     
+    # Install cert-oauth2 if the flag is set
+    if ($InstallCertOAuth2) {
+        SectionSeparator "Installing cert-oauth2"
+        Install-CertOAuth2
+    }
+    
     SectionSeparator "Downloading Version File"
     DownloadVersionFile
     
     SuccessMessage "=== Wazuh Agent Setup Completed Successfully ==="
     InfoMessage "Components installed and configured:"
-    InfoMessage "  [+] Dependencies (Visual C++, GNU sed, curl, jq)"
+    InfoMessage "  [+] Dependencies (curl, jq)"
     InfoMessage "  [+] Wazuh Agent with silent installation"
+    if ($InstallCertOAuth2) {
+        InfoMessage "  [+] cert-oauth2 client for enhanced security"
+        InfoMessage "  [+] Run: C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe o-auth2"
+    }
     InfoMessage "  [+] Version file downloaded"
     InfoMessage ""
     InfoMessage "Setup complete. Wazuh Agent is ready for use."
