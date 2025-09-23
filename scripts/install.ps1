@@ -6,9 +6,6 @@ $WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION 
 # Global variables
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\"
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$APP_DATA = "C:\ProgramData\ossec-agent\"
-
-
 # Variables
 $AgentFileName = "wazuh-agent-$WAZUH_AGENT_VERSION.msi"
 $TempDir = $env:TEMP
@@ -16,11 +13,6 @@ $DownloadUrl = "https://packages.wazuh.com/4.x/windows/wazuh-agent-$WAZUH_AGENT_
 $MsiPath = Join-Path -Path $TempDir -ChildPath $AgentFileName
 
 
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main"
-
-
-$APP_LOGO_URL = "$RepoUrl/assets/wazuh-logo.png"
-$APP_LOGO_PATH = Join-Path -Path $APP_DATA -ChildPath "wazuh-logo.png"
 
 
 # Function for logging with timestamp
@@ -240,36 +232,6 @@ function Install-Agent {
 }
 
 
-function Install-AppAssets {
-    InfoMessage "Downloading application assets..."
-
-
-    try {
-        # Create app data directory if it doesn't exist
-        if (!(Test-Path -Path $APP_DATA)) {
-            New-Item -ItemType Directory -Path $APP_DATA -Force | Out-Null
-            InfoMessage "Created app data directory: $APP_DATA"
-        }
-
-
-        # Download app logo
-        Invoke-WebRequest -Uri $APP_LOGO_URL -OutFile $APP_LOGO_PATH -ErrorAction Stop
-        InfoMessage "App logo downloaded successfully to: $APP_LOGO_PATH"
-        
-        # Verify download
-        if (Test-Path $APP_LOGO_PATH) {
-            $logoSize = (Get-Item $APP_LOGO_PATH).Length
-            InfoMessage "Logo file verified. Size: $logoSize bytes"
-            return $true
-        } else {
-            ErrorMessage "Logo file verification failed"
-            return $false
-        }
-    } catch {
-        ErrorMessage "Failed to download app assets: $($_.Exception.Message)"
-        return $false
-    }
-}
 
 
 function Remove-InstallerFiles {
@@ -310,12 +272,6 @@ try {
     
     InfoMessage "=" * 60
     
-    # Install app assets
-    InfoMessage "Installing application assets..."
-    if (-not (Install-AppAssets)) {
-        WarnMessage "Application assets installation failed (non-critical)."
-        # Don't fail overall installation for assets
-    }
     
 } finally {
     InfoMessage "=" * 60
