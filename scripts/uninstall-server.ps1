@@ -77,8 +77,39 @@ if ($Help) {
     Exit 0
 }
 
+# Function to check if Wazuh Agent is installed
+function Test-WazuhAgentInstalled {
+    # Check for Wazuh service
+    $wazuhService = Get-Service -Name "WazuhSvc" -ErrorAction SilentlyContinue
+    if ($wazuhService) {
+        return $true
+    }
+    
+    # Check for installation directory
+    $wazuhPath = "C:\Program Files (x86)\ossec-agent"
+    if (Test-Path $wazuhPath) {
+        return $true
+    }
+    
+    # Check for installed program via WMI
+    $wazuhProduct = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*Wazuh Agent*" }
+    if ($wazuhProduct) {
+        return $true
+    }
+    
+    return $false
+}
+
 # Function to uninstall Wazuh Agent
 function Uninstall-WazuhAgent {
+    # First check if Wazuh Agent is installed
+    if (-not (Test-WazuhAgentInstalled)) {
+        InfoMessage "Wazuh Agent is not installed on this system. Skipping uninstallation."
+        return $true
+    }
+    
+    InfoMessage "Wazuh Agent detected. Proceeding with uninstallation..."
+    
     $UninstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/heads/feat/windows-server-agent/scripts/uninstall.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-wazuh-agent.ps1"
     $global:UninstallerFiles += $UninstallerPath
