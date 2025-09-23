@@ -79,24 +79,44 @@ if ($Help) {
 
 # Function to check if Wazuh Agent is installed
 function Test-WazuhAgentInstalled {
-    # Check for Wazuh service
+    InfoMessage "Checking if Wazuh Agent is installed..."
+    
+    # Check for Wazuh service (primary indicator)
     $wazuhService = Get-Service -Name "WazuhSvc" -ErrorAction SilentlyContinue
     if ($wazuhService) {
+        InfoMessage "Found Wazuh service: $($wazuhService.Status)"
         return $true
     }
     
-    # Check for installation directory
-    $wazuhPath = "C:\Program Files (x86)\ossec-agent"
-    if (Test-Path $wazuhPath) {
+    # Check for main executable
+    $wazuhExe = "C:\Program Files (x86)\ossec-agent\wazuh-agent.exe"
+    if (Test-Path $wazuhExe) {
+        InfoMessage "Found Wazuh agent executable"
         return $true
     }
     
-    # Check for installed program via WMI
-    $wazuhProduct = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*Wazuh Agent*" }
-    if ($wazuhProduct) {
+    # Check for ossec-agent.exe (alternative name)
+    $ossecExe = "C:\Program Files (x86)\ossec-agent\ossec-agent.exe"
+    if (Test-Path $ossecExe) {
+        InfoMessage "Found OSSEC agent executable"
         return $true
     }
     
+    # Check for installed program via registry (faster than WMI)
+    $uninstallKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    
+    foreach ($key in $uninstallKeys) {
+        $programs = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Wazuh Agent*" }
+        if ($programs) {
+            InfoMessage "Found Wazuh Agent in registry"
+            return $true
+        }
+    }
+    
+    InfoMessage "No Wazuh Agent installation detected"
     return $false
 }
 
