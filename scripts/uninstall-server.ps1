@@ -109,7 +109,7 @@ function Test-WazuhAgentInstalled {
     )
     
     foreach ($key in $uninstallKeys) {
-        $programs = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Wazuh Agent*" }
+        $programs = Get-ItemProperty $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and $_.DisplayName -like "*Wazuh Agent*" }
         if ($programs) {
             InfoMessage "Found Wazuh Agent in registry"
             return $true
