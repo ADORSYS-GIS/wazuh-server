@@ -1,24 +1,21 @@
+# PowerShell script to install core dependencies for Wazuh Agent on Windows
+# This script installs only essential dependencies: curl and jq (aligned with Linux deps.sh)
 
 # Function to log messages with a timestamp
 function Log {
     param (
         [string]$Level,
         [string]$Message,
-        [string]$Color = "White"  # Default color
+        [string]$Color = "White"
     )
     $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
 }
 
-# Logging helpers with colors
+# Logging helpers
 function InfoMessage {
     param ([string]$Message)
     Log "[INFO]" $Message "White"
-}
-
-function WarnMessage {
-    param ([string]$Message)
-    Log "[WARNING]" $Message "Yellow"
 }
 
 function ErrorMessage {
@@ -31,176 +28,80 @@ function SuccessMessage {
     Log "[SUCCESS]" $Message "Green"
 }
 
-function PrintStep {
-    param (
-        [int]$StepNumber,
-        [string]$Message
-    )
-    Log "[STEP]" "Step ${StepNumber}: $Message" "White"
-}
-
-# Exit script with an error message
-function ErrorExit {
-    param ([string]$Message)
-    ErrorMessage $Message
-    exit 1
-}
-
-function Ensure-Dependencies {
-    InfoMessage "Ensuring dependencies are installed (curl, jq)"   
-
+# Function to install core dependencies (curl and jq only)
+function Install-CoreDependencies {
+    InfoMessage "Installing core dependencies: curl and jq"
+    
     # Check if curl is available
     if (-not (Get-Command curl -ErrorAction SilentlyContinue)) {
-        InfoMessage "curl is not installed. Installing curl..."
-        Invoke-WebRequest -Uri "https://curl.se/windows/dl-7.79.1_2/curl-7.79.1_2-win64-mingw.zip" -OutFile "$TEMP_DIR\curl.zip"
-        Expand-Archive -Path "$TEMP_DIR\curl.zip" -DestinationPath "$TEMP_DIR\curl"
-        Move-Item -Path "$TEMP_DIR\curl\curl-7.79.1_2-win64-mingw\bin\curl.exe" -Destination "C:\Program Files\curl.exe"
-        Remove-Item -Path "$TEMP_DIR\curl.zip" -Recurse
-        Remove-Item -Path "$TEMP_DIR\curl" -Recurse
-        InfoMessage "curl installed successfully."
-
-        # Add curl to the PATH environment variable
-        $env:Path += ";C:\Program Files"
-        [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Machine)
-        InfoMessage "curl added to PATH environment variable."
+        InfoMessage "Installing curl..."
+        try {
+            Invoke-WebRequest -Uri "https://curl.se/windows/dl-7.79.1_2/curl-7.79.1_2-win64-mingw.zip" -OutFile "$env:TEMP\curl.zip" -ErrorAction Stop
+            Expand-Archive -Path "$env:TEMP\curl.zip" -DestinationPath "$env:TEMP\curl" -ErrorAction Stop
+            New-Item -ItemType Directory -Path "C:\Program Files\curl" -Force | Out-Null
+            Move-Item -Path "$env:TEMP\curl\curl-7.79.1_2-win64-mingw\bin\curl.exe" -Destination "C:\Program Files\curl\curl.exe" -ErrorAction Stop
+            
+            # Add to PATH
+            $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+            if ($currentPath -notlike "*C:\Program Files\curl*") {
+                [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;C:\Program Files\curl", [System.EnvironmentVariableTarget]::Machine)
+                $env:Path += ";C:\Program Files\curl"
+            }
+            
+            # Cleanup
+            Remove-Item -Path "$env:TEMP\curl.zip" -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "$env:TEMP\curl" -Recurse -Force -ErrorAction SilentlyContinue
+            
+            InfoMessage "curl installed successfully"
+        } catch {
+            ErrorMessage "Failed to install curl: $($_.Exception.Message)"
+            return $false
+        }
+    } else {
+        InfoMessage "curl is already available"
     }
 
     # Check if jq is available
     if (-not (Get-Command jq -ErrorAction SilentlyContinue)) {
-        InfoMessage "jq is not installed. Installing jq..."
-        Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe" -OutFile "C:\Program Files\jq.exe"
-        InfoMessage "jq installed successfully."
-
-        # Add jq to the PATH environment variable
-        $env:Path += ";C:\Program Files"
-        [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Machine)
-        InfoMessage "jq added to PATH environment variable."
-    }
-}
-
-
-function Install-BurntToastModule {
-    [CmdletBinding()]
-    param()
-
-    try {
-        # Check if the NuGet provider is installed (minimum version 2.8.5.201) without using a variable.
-        if (Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue) {
-            InfoMessage "NuGet provider is already installed."
-        }
-        else {
-            WarnMessage "NuGet provider not found. Installing NuGet provider..."
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -ErrorAction Stop
-            InfoMessage "NuGet provider installed successfully."
-        }
-
-        # Check if the BurntToast module is already installed.
-        if (Get-Module -ListAvailable -Name BurntToast -ErrorAction SilentlyContinue) {
-            InfoMessage "Module 'BurntToast' is already installed."
-        }
-        else {
-            InfoMessage "BurnToast Module not found. Installing module 'BurntToast'..."
-            Install-Module -Name BurntToast -Force -Confirm:$false -ErrorAction Stop
-            InfoMessage "Module 'BurntToast' installed successfully."
-        }
-
-        # Import the BurntToast module to ensure commands like New-BurntToastNotification are recognized.
-        InfoMessage "Importing module 'BurntToast'..."
-        Import-Module BurntToast -ErrorAction Stop
-        InfoMessage "Module 'BurntToast' imported successfully."
-    }
-    catch {
-        ErrorMessage "Failed to install or import module 'BurntToast'. Error details: $_"
-    }
-}
-
-
-
-
-
-function Install-GnuSed {
-    # Define the source URL and destination path
-    $SourceUrl = "https://downloads.sourceforge.net/project/gnuwin32/sed/4.2.1/sed-4.2.1-setup.exe?ts=gAAAAABnihwyfyy8CnXn7cxMYUNSQkpG2f2dUMFeiIGE8dM6A4aJ9G6yYtMvnuqpFQ658BS-pINAAB2fnD6SQOVdenwjEcrf0w%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fgnuwin32%2Ffiles%2Fsed%2F4.2.1%2Fsed-4.2.1-setup.exe%2Fdownload%3Fuse_mirror%3Ddeac-fra%26r%3Dhttps%253A%252F%252Fsourceforge.net%252Fprojects%252Fgnuwin32%252Ffiles%252Fsed%252F4.2.1%252Fsed-4.2.1-setup.exe%252Fdownload%253Fuse_mirror%253Dnetcologne%2522"
-    $DestinationPath = "$env:TEMP\sed-4.2.1-setup.exe"
-
-    # Define a test command to check if GNU sed is installed
-    $TestCommand = "sed --version"
-    $DefaultInstallPath = "C:\Program Files (x86)\GnuWin32\bin"
-
-    try {
-        # Check if GNU sed is already installed
-        InfoMessage "Checking if GNU sed is already installed..."
-        $versionOutput = & cmd /c $TestCommand 2>&1
-        if ($versionOutput -match "GNU sed") {
-            InfoMessage "GNU sed is already installed." 
-            return
-        }
-    } catch {
-        WarnMessage "GNU sed is not installed. Proceeding with download and installation..." 
-    }
-
-    try {
-        # Download the installer using BITS
-        InfoMessage "Downloading GNU sed setup file to $DestinationPath..."
-        Start-BitsTransfer -Source $SourceUrl -Destination $DestinationPath
-
-        InfoMessage "Download completed. Starting installation..." 
-        
-        # Run the installer silently
-        Start-Process -FilePath $DestinationPath  -Wait
-
-        SuccessMessage "GNU sed installed successfully." 
-
-        # Check if the installation path exists
-        if (-Not (Test-Path $DefaultInstallPath)) {
-            ErrorMessage "Installation directory not found. Please verify the installation." 
-            return
-        }
-
-        # Add sed to the system PATH if it's not already included
-        InfoMessage "Checking if sed is in the PATH..."
-        $currentPath = [Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
-        if ($currentPath -notlike "*$DefaultInstallPath*") {
-            WarnMessage "Adding GNU sed to the system PATH..." 
+        InfoMessage "Installing jq..."
+        try {
+            New-Item -ItemType Directory -Path "C:\Program Files\jq" -Force | Out-Null
+            Invoke-WebRequest -Uri "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe" -OutFile "C:\Program Files\jq\jq.exe" -ErrorAction Stop
             
-            $env:Path += ";C:\Program Files (x86)\GnuWin32\bin"
-            [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Machine)
-            SuccessMessage "GNU sed added to the system PATH. Restart your terminal to apply changes." 
-        } else {
-            SuccessMessage "GNU sed is already in the PATH." 
+            # Add to PATH
+            $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+            if ($currentPath -notlike "*C:\Program Files\jq*") {
+                [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;C:\Program Files\jq", [System.EnvironmentVariableTarget]::Machine)
+                $env:Path += ";C:\Program Files\jq"
+            }
+            
+            InfoMessage "jq installed successfully"
+        } catch {
+            ErrorMessage "Failed to install jq: $($_.Exception.Message)"
+            return $false
         }
-    } catch {
-        # Catch and display any errors
-        ErrorMessage "An error occurred: $($_.Exception.Message)" 
+    } else {
+        InfoMessage "jq is already available"
     }
-    Remove-Item -Path $DestinationPath
+    
+    return $true
 }
 
+# Main execution
+InfoMessage "=== Wazuh Agent Dependencies Installation ==="
+InfoMessage "Installing core dependencies (aligned with Linux deps.sh)"
+InfoMessage "Dependencies: curl, jq"
+InfoMessage "=" * 50
 
-
-
-# Function to check if Visual C++ Redistributable is installed
-function IsVCppInstalled {
-    $vcppKey = "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
-    if (Test-Path $vcppKey) {
-        $vcppInstalled = Get-ItemProperty -Path $vcppKey
-        if ($vcppInstalled -and $vcppInstalled.Installed -eq 1) {
-            SuccessMessage "Visual C++ Redistributable is installed." 
-            return $true
-        }
+try {
+    if (Install-CoreDependencies) {
+        SuccessMessage "All core dependencies installed successfully!"
+        exit 0
+    } else {
+        ErrorMessage "Failed to install some dependencies"
+        exit 1
     }
-    WarnMessage "Visual C++ Redistributable is not installed. Installing Visual C++ Redistributable..." 
-    Invoke-WebRequest -Uri "https://aka.ms/vs/16/release/vc_redist.x64.exe" -OutFile "$env:TEMP\vc_redist.x64.exe"
-    Start-Process -FilePath "$env:TEMP\vc_redist.x64.exe" -ArgumentList "/quiet /install" -Wait
-    Remove-Item -Path "$env:TEMP\vc_redist.x64.exe"
+} catch {
+    ErrorMessage "Dependency installation failed: $($_.Exception.Message)"
+    exit 1
 }
-
-
-
-
-IsVCppInstalled
-Install-GnuSed
-Ensure-Dependencies
-Install-BurntToastModule
-
-
