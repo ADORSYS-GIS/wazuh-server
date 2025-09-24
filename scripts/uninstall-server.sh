@@ -77,21 +77,26 @@ uninstall_cert_oauth2() {
     
     info_message "cert-oauth2 client detected. Proceeding with uninstallation..."
     
-    # Remove cert-oauth2 binary from common locations
-    if [ -f "/var/ossec/bin/wazuh-cert-oauth2-client" ]; then
-        info_message "Removing cert-oauth2 client from /var/ossec/bin/"
-        maybe_sudo rm -f "/var/ossec/bin/wazuh-cert-oauth2-client"
+    # Variables for cert-oauth2
+    WOPS_VERSION=${WOPS_VERSION:-"0.2.18"}
+    
+    info_message "Downloading cert-oauth2 uninstallation script..."
+    info_message "Version: $WOPS_VERSION"
+    
+    OAUTH2_UNINSTALL_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/uninstall.sh"
+    OAUTH2_UNINSTALL_SCRIPT="$TMP_FOLDER/cert-oauth2-uninstall.sh"
+    
+    if ! curl -SL -s "$OAUTH2_UNINSTALL_URL" -o "$OAUTH2_UNINSTALL_SCRIPT"; then
+        error_message "Failed to download cert-oauth2 uninstallation script"
+        return 1
     fi
     
-    if [ -f "/usr/local/bin/wazuh-cert-oauth2-client" ]; then
-        info_message "Removing cert-oauth2 client from /usr/local/bin/"
-        maybe_sudo rm -f "/usr/local/bin/wazuh-cert-oauth2-client"
-    fi
+    info_message "cert-oauth2 uninstallation script downloaded successfully"
+    info_message "Executing cert-oauth2 uninstallation..."
     
-    # Remove cert-oauth2 configuration files if they exist
-    if [ -f "/var/ossec/etc/wazuh-cert-oauth2.conf" ]; then
-        info_message "Removing cert-oauth2 configuration file"
-        maybe_sudo rm -f "/var/ossec/etc/wazuh-cert-oauth2.conf"
+    if ! (bash "$OAUTH2_UNINSTALL_SCRIPT") 2>&1; then
+        error_message "Failed to uninstall cert-oauth2 client"
+        return 1
     fi
     
     success_message "cert-oauth2 client uninstalled successfully."

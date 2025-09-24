@@ -124,54 +124,21 @@ function Uninstall-CertOAuth2 {
     InfoMessage "cert-oauth2 client detected. Proceeding with uninstallation..."
     
     try {
-        # Remove cert-oauth2 binary from common locations
-        $certOAuth2Paths = @(
-            "C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe",
-            "C:\Program Files\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe",
-            "C:\Program Files (x86)\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe",
-            "$env:USERPROFILE\AppData\Local\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe"
-        )
+        # Variables for cert-oauth2
+        $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
         
-        foreach ($path in $certOAuth2Paths) {
-            if (Test-Path $path) {
-                InfoMessage "Removing cert-oauth2 client from: $path"
-                Remove-Item $path -Force -ErrorAction Stop
-            }
-        }
+        InfoMessage "Downloading cert-oauth2 uninstallation script..."
+        InfoMessage "Version: $WOPS_VERSION"
         
-        # Remove cert-oauth2 directories if empty
-        $certOAuth2Dirs = @(
-            "C:\Program Files\wazuh-cert-oauth2-client",
-            "C:\Program Files (x86)\wazuh-cert-oauth2-client",
-            "$env:USERPROFILE\AppData\Local\wazuh-cert-oauth2-client"
-        )
+        $OAuth2UninstallUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/uninstall.ps1"
+        $OAuth2UninstallScript = "$env:TEMP\wazuh-cert-oauth2-uninstall.ps1"
+        $global:UninstallerFiles += $OAuth2UninstallScript
         
-        foreach ($dir in $certOAuth2Dirs) {
-            if (Test-Path $dir) {
-                try {
-                    $items = Get-ChildItem $dir -ErrorAction SilentlyContinue
-                    if (-not $items) {
-                        InfoMessage "Removing empty cert-oauth2 directory: $dir"
-                        Remove-Item $dir -Force -ErrorAction Stop
-                    }
-                } catch {
-                    WarningMessage "Could not remove directory: $dir - $($_.Exception.Message)"
-                }
-            }
-        }
+        Invoke-WebRequest -Uri $OAuth2UninstallUrl -OutFile $OAuth2UninstallScript -ErrorAction Stop
+        InfoMessage "cert-oauth2 uninstallation script downloaded successfully"
         
-        # Remove cert-oauth2 configuration files if they exist
-        $configPaths = @(
-            "C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2.conf",
-            "$env:USERPROFILE\AppData\Local\wazuh-cert-oauth2.conf"
-        )
-        
-        foreach ($configPath in $configPaths) {
-            if (Test-Path $configPath) {
-                InfoMessage "Removing cert-oauth2 configuration file: $configPath"
-                Remove-Item $configPath -Force -ErrorAction Stop
-            }
-        }
+        InfoMessage "Executing cert-oauth2 uninstallation..."
+        & powershell.exe -ExecutionPolicy Bypass -File $OAuth2UninstallScript -ErrorAction Stop
         
         SuccessMessage "cert-oauth2 client uninstalled successfully."
         return $true
