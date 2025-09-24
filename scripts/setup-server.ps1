@@ -5,6 +5,7 @@
 #Requires -RunAsAdministrator
 
 param(
+    [switch]$InstallCertOAuth2,
     [switch]$Help
 )
 
@@ -18,7 +19,7 @@ $WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION 
 $WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.2-rc1" }
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
+$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/cert-oauth2"
 $VERSION_FILE_URL = "$RepoUrl/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
@@ -115,7 +116,27 @@ function Install-WazuhAgent {
     }
 }
 
+function Install-OAuth2Client {
+    # Variables for cert-oauth2
+    $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
+    $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-client" }
+    
+    $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.ps1"
+    $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
+    $global:InstallerFiles += $OAuth2Script
 
+    try {
+        InfoMessage "Downloading and executing wazuh-cert-oauth2-client script..."
+        Invoke-WebRequest -Uri $OAuth2Url -OutFile $OAuth2Script -ErrorAction Stop
+        InfoMessage "wazuh-cert-oauth2-client script downloaded successfully."
+        & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ArgumentList "-LOG_LEVEL", $LOG_LEVEL, "-OSSEC_CONF_PATH", $OSSEC_CONF_PATH, "-APP_NAME", $APP_NAME, "-WOPS_VERSION", $WOPS_VERSION -ErrorAction Stop
+        SuccessMessage "cert-oauth2 client installed successfully!"
+    }
+    catch {
+        ErrorMessage "Error during wazuh-cert-oauth2-client installation: $($_.Exception.Message)"
+        throw
+    }
+}
 
 function DownloadVersionFile {
     InfoMessage "Downloading version file..."
@@ -174,7 +195,7 @@ try {
     # Install cert-oauth2 if the flag is set
     if ($InstallCertOAuth2) {
         SectionSeparator "Installing cert-oauth2"
-        Install-CertOAuth2
+        Install-OAuth2Client
     }
     
     SectionSeparator "Downloading Version File"
