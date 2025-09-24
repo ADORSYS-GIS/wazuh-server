@@ -105,7 +105,8 @@ function Test-CertOAuth2Installed {
         $null = Get-Command "wazuh-cert-oauth2-client.exe" -ErrorAction Stop
         InfoMessage "Found cert-oauth2 client in PATH"
         return $true
-    } catch {
+    }
+    catch {
         # Not found in PATH
     }
     
@@ -143,7 +144,8 @@ function Uninstall-CertOAuth2 {
         SuccessMessage "cert-oauth2 client uninstalled successfully."
         return $true
         
-    } catch {
+    }
+    catch {
         ErrorMessage "Failed to uninstall cert-oauth2 client: $($_.Exception.Message)"
         return $false
     }
@@ -211,7 +213,8 @@ function Uninstall-WazuhAgent {
         InfoMessage "Wazuh agent uninstall script downloaded successfully."
         & PowerShell -ExecutionPolicy Bypass -File $UninstallerPath
         return $true
-    } catch {
+    }
+    catch {
         ErrorMessage "Failed to download or execute Wazuh agent uninstall script: $($_.Exception.Message)"
         return $false
     }
@@ -221,25 +224,21 @@ function Uninstall-WazuhAgent {
 $overallSuccess = $true
 
 try {
-    SectionSeparator "Uninstalling cert-oauth2 Client"
-    if (-not (Uninstall-CertOAuth2)) {
-        ErrorMessage "cert-oauth2 client uninstallation failed."
-        $overallSuccess = $false
-    }
-    
-    SectionSeparator "Uninstalling Wazuh Agent"
+    SectionSeparator "Uninstalling Wazuh Agent "
     if (-not (Uninstall-WazuhAgent)) {
         ErrorMessage "Wazuh Agent uninstallation failed."
         $overallSuccess = $false
     }
     
-} finally {
+}
+finally {
     InfoMessage "Cleaning up uninstaller files..."
     Remove-UninstallerFiles
     
     if ($overallSuccess) {
         SuccessMessage "Wazuh Agent Uninstallation Completed Successfully"
-    } else {
+    }
+    else {
         ErrorMessage "Wazuh Agent uninstallation encountered errors"
         exit 1
     }
