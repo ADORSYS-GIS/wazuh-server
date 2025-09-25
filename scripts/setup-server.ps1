@@ -216,4 +216,4 @@ catch {
 finally {
     InfoMessage "Cleaning up installer files..."
     Remove-InstallerFiles
-}
+} 
