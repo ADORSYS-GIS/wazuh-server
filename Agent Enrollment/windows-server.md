@@ -19,7 +19,7 @@ When prompted, choose A (Yes to All).
 Set your manager hostname, download the setup script, and run it. This installs only the core dependencies and the Wazuh Agent.
 
 ```powershell
-$env:WAZUH_MANAGER = "manager.wazuh.adorsys.team"
+$env:WAZUH_MANAGER = "single-cluster.dev.wazuh.adorsys.team"
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.2-rc1/scripts/setup-server.ps1' `
   -UseBasicParsing -OutFile "$env:TEMP\setup-server.ps1"; `
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1"
