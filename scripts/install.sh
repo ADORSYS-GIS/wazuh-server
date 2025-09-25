@@ -277,9 +277,9 @@ enable_repo() {
 }
 
 get_installed_version() {
-    local version=""
     case "$(uname -s)" in
         Linux*)
+            local version=""
             # Ubuntu/Debian
             if command -v dpkg >/dev/null 2>&1; then
                 version=$(dpkg -l 2>/dev/null | awk '/wazuh-agent/ {print $3; exit}' || true)
@@ -288,32 +288,26 @@ get_installed_version() {
                 version=$(rpm -qa --queryformat '%{VERSION}-%{RELEASE}\n' wazuh-agent 2>/dev/null | head -1 || true)
             else
                 warn_message "Cannot determine installed version on Linux."
-                return 1
+                exit 0
             fi
+            echo "${version:-}"
             ;;
         Darwin*)
-            # macOS (PKG)
+             # macOS (PKG)
             if [ -f "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" ]; then
-                version=$(
-                  set +e
-                  plutil -p "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" 2>/dev/null |
-                    awk -F'"' '/PackageFileName/ {print $4}' |
-                    sed -E 's/.*wazuh-agent-([0-9.]+-[0-9]+).*/\1/'
-                  set -e
-                )
+                plutil -p "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" 2>/dev/null | \
+                awk -F'"' '/PackageFileName/ {print $4}' | \
+                sed -E 's/.*wazuh-agent-([0-9.]+-[0-9]+).*/\1/'            
             else
                 warn_message "Cannot determine installed version on macOS."
-                return 1
+                exit 0
             fi
             ;;
         *)
             warn_message "Unsupported OS: $(uname -s)"
-            return 1
+            exit 0
             ;;
     esac
-
-    # If no version found, return empty string instead of failing
-    echo "${version:-}"
 }
 
 
