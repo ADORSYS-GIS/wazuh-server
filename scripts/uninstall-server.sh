@@ -46,62 +46,7 @@ error_message() { log "${RED}${BOLD}[ERROR]${NORMAL}" "$*"; }
 success_message() { log "${GREEN}${BOLD}[SUCCESS]${NORMAL}" "$*"; }
 print_step() { log "${BLUE}${BOLD}[STEP]${NORMAL}" "$1: $2"; }
 
-# Check if cert-oauth2 client is installed
-check_cert_oauth2_installed() {
-    # Check for cert-oauth2 binary in common locations
-    if [ -f "/var/ossec/bin/wazuh-cert-oauth2-client" ]; then
-        return 0
-    fi
-    
-    # Check for cert-oauth2 binary in user's PATH
-    if command -v wazuh-cert-oauth2-client >/dev/null 2>&1; then
-        return 0
-    fi
-    
-    # Check for cert-oauth2 binary in /usr/local/bin
-    if [ -f "/usr/local/bin/wazuh-cert-oauth2-client" ]; then
-        return 0
-    fi
-    
-    return 1
-}
 
-# Function to uninstall cert-oauth2 client
-uninstall_cert_oauth2() {
-    info_message "Checking for cert-oauth2 client..."
-    
-    if ! check_cert_oauth2_installed; then
-        info_message "cert-oauth2 client not found. Skipping cert-oauth2 uninstallation."
-        return 0
-    fi
-    
-    info_message "cert-oauth2 client detected. Proceeding with uninstallation..."
-    
-    # Variables for cert-oauth2
-    WOPS_VERSION=${WOPS_VERSION:-"0.2.18"}
-    
-    info_message "Downloading cert-oauth2 uninstallation script..."
-    info_message "Version: $WOPS_VERSION"
-    
-    OAUTH2_UNINSTALL_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/uninstall.sh"
-    OAUTH2_UNINSTALL_SCRIPT="$TMP_FOLDER/cert-oauth2-uninstall.sh"
-    
-    if ! curl -SL -s "$OAUTH2_UNINSTALL_URL" -o "$OAUTH2_UNINSTALL_SCRIPT"; then
-        error_message "Failed to download cert-oauth2 uninstallation script"
-        return 1
-    fi
-    
-    info_message "cert-oauth2 uninstallation script downloaded successfully"
-    info_message "Executing cert-oauth2 uninstallation..."
-    
-    if ! (bash "$OAUTH2_UNINSTALL_SCRIPT") 2>&1; then
-        error_message "Failed to uninstall cert-oauth2 client"
-        return 1
-    fi
-    
-    success_message "cert-oauth2 client uninstalled successfully."
-    return 0
-}
 
 # Check if a command exists
 command_exists() {
@@ -144,23 +89,17 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
 fi
 
-# Step 1: Uninstall cert-oauth2 client if present
-print_step 1 "Checking and uninstalling cert-oauth2 client..."
-if ! uninstall_cert_oauth2; then
-    error_message "Failed to uninstall cert-oauth2 client"
-    exit 1
-fi
 
-# Step 2: Uninstall Wazuh agent
-print_step 2 "Uninstalling Wazuh agent..."
+# Step 1: Uninstall Wazuh agent
+print_step 1 "Uninstalling Wazuh agent..."
 if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-server.sh") 2>&1; then
     error_message "Failed to uninstall wazuh-server"
     exit 1
 fi
 
-# Step 3: Uninstall Trivy if the flag is set
+# Step 2: Uninstall Trivy if the flag is set
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
-    print_step 3 "Uninstalling trivy..."
+    print_step 2 "Uninstalling trivy..."
     if ! (bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
         error_message "Failed to uninstall 'trivy'"
         exit 1

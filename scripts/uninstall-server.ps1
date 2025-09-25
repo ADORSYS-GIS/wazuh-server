@@ -77,79 +77,7 @@ if ($Help) {
     Exit 0
 }
 
-# Function to check if cert-oauth2 client is installed
-function Test-CertOAuth2Installed {
-    # Check for cert-oauth2 binary in Wazuh Agent directory
-    $certOAuth2Path = "C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe"
-    if (Test-Path $certOAuth2Path) {
-        InfoMessage "Found cert-oauth2 client at: $certOAuth2Path"
-        return $true
-    }
-    
-    # Check for cert-oauth2 binary in common locations
-    $commonPaths = @(
-        "C:\Program Files\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe",
-        "C:\Program Files (x86)\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe",
-        "$env:USERPROFILE\AppData\Local\wazuh-cert-oauth2-client\wazuh-cert-oauth2-client.exe"
-    )
-    
-    foreach ($path in $commonPaths) {
-        if (Test-Path $path) {
-            InfoMessage "Found cert-oauth2 client at: $path"
-            return $true
-        }
-    }
-    
-    # Check if cert-oauth2 is in PATH
-    try {
-        $null = Get-Command "wazuh-cert-oauth2-client.exe" -ErrorAction Stop
-        InfoMessage "Found cert-oauth2 client in PATH"
-        return $true
-    }
-    catch {
-        # Not found in PATH
-    }
-    
-    return $false
-}
 
-# Function to uninstall cert-oauth2 client
-function Uninstall-CertOAuth2 {
-    InfoMessage "Checking for cert-oauth2 client..."
-    
-    if (-not (Test-CertOAuth2Installed)) {
-        InfoMessage "cert-oauth2 client not found. Skipping cert-oauth2 uninstallation."
-        return $true
-    }
-    
-    InfoMessage "cert-oauth2 client detected. Proceeding with uninstallation..."
-    
-    try {
-        # Variables for cert-oauth2
-        $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
-        
-        InfoMessage "Downloading cert-oauth2 uninstallation script..."
-        InfoMessage "Version: $WOPS_VERSION"
-        
-        $OAuth2UninstallUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/uninstall.ps1"
-        $OAuth2UninstallScript = "$env:TEMP\wazuh-cert-oauth2-uninstall.ps1"
-        $global:UninstallerFiles += $OAuth2UninstallScript
-        
-        Invoke-WebRequest -Uri $OAuth2UninstallUrl -OutFile $OAuth2UninstallScript -ErrorAction Stop
-        InfoMessage "cert-oauth2 uninstallation script downloaded successfully"
-        
-        InfoMessage "Executing cert-oauth2 uninstallation..."
-        & powershell.exe -ExecutionPolicy Bypass -File $OAuth2UninstallScript -ErrorAction Stop
-        
-        SuccessMessage "cert-oauth2 client uninstalled successfully."
-        return $true
-        
-    }
-    catch {
-        ErrorMessage "Failed to uninstall cert-oauth2 client: $($_.Exception.Message)"
-        return $false
-    }
-}
 
 # Function to check if Wazuh Agent is installed
 function Test-WazuhAgentInstalled {
