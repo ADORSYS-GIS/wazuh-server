@@ -121,6 +121,12 @@ function Install-BurntToastModule {
 }
 
 function Install-Chocolatey {
+    # Check if Chocolatey is already installed
+    if (Get-Command choco -ErrorAction SilentlyContinue) {
+        InfoMessage "Chocolatey is already installed"
+        return $true
+    }
+    
     try {
         InfoMessage "Chocolatey not found. Installing Chocolatey..."
         
@@ -134,8 +140,11 @@ function Install-Chocolatey {
         # Refresh environment variables
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
         
-        # Verify installation
-        if (Get-Command choco -ErrorAction SilentlyContinue) {
+        # Wait a moment for installation to complete
+        Start-Sleep -Seconds 2
+        
+        # Verify installation by checking if choco.exe exists in expected location
+        if (Test-Path "$env:ProgramData\chocolatey\bin\choco.exe") {
             SuccessMessage "Chocolatey installed successfully"
             return $true
         } else {
