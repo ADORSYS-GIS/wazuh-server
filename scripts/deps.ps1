@@ -48,7 +48,7 @@ function ErrorExit {
     exit 1
 }
 
-function Ensure-Dependencies {
+function Install-Dependencies {
     InfoMessage "Ensuring dependencies are installed (curl, jq)"   
 
     # Check if curl is available
@@ -121,12 +121,48 @@ function Install-BurntToastModule {
 }
 
 function Install-Chocolatey {
-    # Check if Chocolatey is already installed
-    if (Get-Command choco -ErrorAction SilentlyContinue) {
-        InfoMessage "Chocolatey is already installed"
-        return $true
+    # Method 1: Check if choco command is available in PATH
+    try {
+        $chocoVersion = & choco --version 2>$null
+        if ($chocoVersion) {
+            InfoMessage "Chocolatey is already installed and functional. Version: $chocoVersion"
+            return $true
+        }
+    } catch {
+        # Command not found in PATH, continue checking
     }
     
+    # Method 2: Check if Chocolatey executable exists in standard location
+    $chocoPath = "$env:ProgramData\chocolatey\bin\choco.exe"
+    if (Test-Path $chocoPath) {
+        # Refresh PATH to include Chocolatey
+        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        
+        # Add Chocolatey to current session PATH if not already there
+        if ($env:PATH -notlike "*chocolatey\bin*") {
+            $env:PATH += ";$env:ProgramData\chocolatey\bin"
+        }
+        
+        # Test if choco command works now
+        try {
+            $chocoVersion = & $chocoPath --version 2>$null
+            if ($chocoVersion) {
+                InfoMessage "Chocolatey found and functional. Version: $chocoVersion"
+                return $true
+            }
+        } catch {
+            WarnMessage "Chocolatey executable exists but is not functional. Will attempt reinstallation..."
+        }
+    }
+    
+    # Method 3: Check if Chocolatey directory exists (partial installation)
+    if (Test-Path "$env:ProgramData\chocolatey") {
+        WarnMessage "Chocolatey directory exists but installation appears incomplete. Skipping installation."
+        WarnMessage "If you encounter issues, manually remove '$env:ProgramData\chocolatey' and run this script again."
+        return $false
+    }
+    
+    # Install Chocolatey if not found
     try {
         InfoMessage "Chocolatey not found. Installing Chocolatey..."
         
@@ -135,22 +171,41 @@ function Install-Chocolatey {
         
         # Download and install Chocolatey
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        
+        # Install Chocolatey
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         
         # Refresh environment variables
         $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
         
-        # Wait a moment for installation to complete
-        Start-Sleep -Seconds 2
+        # Add Chocolatey to current session PATH
+        if ($env:PATH -notlike "*chocolatey\bin*") {
+            $env:PATH += ";$env:ProgramData\chocolatey\bin"
+        }
         
-        # Verify installation by checking if choco.exe exists in expected location
+        # Wait for installation to complete
+        Start-Sleep -Seconds 5
+        
+        # Verify installation
         if (Test-Path "$env:ProgramData\chocolatey\bin\choco.exe") {
-            SuccessMessage "Chocolatey installed successfully"
-            return $true
+            try {
+                $chocoVersion = & "$env:ProgramData\chocolatey\bin\choco.exe" --version 2>$null
+                if ($chocoVersion) {
+                    SuccessMessage "Chocolatey installed successfully. Version: $chocoVersion"
+                    return $true
+                } else {
+                    ErrorMessage "Chocolatey installed but version check failed"
+                    return $false
+                }
+            } catch {
+                ErrorMessage "Chocolatey installed but command test failed: $($_.Exception.Message)"
+                return $false
+            }
         } else {
-            ErrorMessage "Chocolatey installation verification failed"
+            ErrorMessage "Chocolatey installation failed - executable not found"
             return $false
         }
+        
     } catch {
         ErrorMessage "Failed to install Chocolatey: $($_.Exception.Message)"
         return $false
@@ -176,7 +231,9 @@ function Install-GnuSed {
     try {
         # Check if Chocolatey is available, install if needed
         InfoMessage "[STEP 2/4] Checking Chocolatey availability..."
-        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        $chocoPath = "$env:ProgramData\chocolatey\bin\choco.exe"
+        
+        if (-not (Test-Path $chocoPath) -and -not (Get-Command choco -ErrorAction SilentlyContinue)) {
             InfoMessage "Chocolatey not found. Installing Chocolatey first..."
             if (-not (Install-Chocolatey)) {
                 ErrorMessage "Failed to install Chocolatey. Cannot proceed with GNU sed installation."
@@ -186,9 +243,19 @@ function Install-GnuSed {
             InfoMessage "Chocolatey is available"
         }
         
+        # Ensure we have the correct choco path
+        if (Test-Path $chocoPath) {
+            $chocoCommand = $chocoPath
+        } elseif (Get-Command choco -ErrorAction SilentlyContinue) {
+            $chocoCommand = "choco"
+        } else {
+            ErrorMessage "Chocolatey command not found after installation"
+            return $false
+        }
+        
         # Install sed using Chocolatey (silent by default)
         InfoMessage "[STEP 3/4] Installing GNU sed via Chocolatey..."
-        $chocoProcess = Start-Process -FilePath "choco" -ArgumentList "install", "sed", "-y" -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        $chocoProcess = Start-Process -FilePath $chocoCommand -ArgumentList "install", "sed", "-y" -Wait -PassThru -NoNewWindow -ErrorAction Stop
         
         if ($chocoProcess.ExitCode -eq 0) {
             InfoMessage "GNU sed installed successfully via Chocolatey"
@@ -315,7 +382,7 @@ InfoMessage "=" * 60
 # Ensure other dependencies (curl, jq)
 InfoMessage "Ensuring additional dependencies (curl, jq)..."
 try {
-    Ensure-Dependencies
+    Install-Dependencies
     InfoMessage "Additional dependencies check completed."
 } catch {
     ErrorMessage "Additional dependencies installation failed: $($_.Exception.Message)"
