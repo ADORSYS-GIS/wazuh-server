@@ -136,7 +136,7 @@ info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2"
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
 curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/scripts/deps.sh" > "$TMP_FOLDER/install-deps.sh"
-curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
+curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/heads/feat/cert-oauth2/scripts/install.sh" > "$TMP_FOLDER/install-wazuh-server.sh"
 
 # Step 0: Install dependencies
 info_message "Installing dependencies"
