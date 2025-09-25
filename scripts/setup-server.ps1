@@ -117,10 +117,6 @@ function Install-WazuhAgent {
 }
 
 function Install-OAuth2Client {
-    # Variables for cert-oauth2
-    $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
-    $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-client" }
-    
     $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.ps1"
     $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
     $global:InstallerFiles += $OAuth2Script
@@ -129,12 +125,10 @@ function Install-OAuth2Client {
         InfoMessage "Downloading and executing wazuh-cert-oauth2-client script..."
         Invoke-WebRequest -Uri $OAuth2Url -OutFile $OAuth2Script -ErrorAction Stop
         InfoMessage "wazuh-cert-oauth2-client script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ArgumentList "-LOG_LEVEL", $LOG_LEVEL, "-OSSEC_CONF_PATH", $OSSEC_CONF_PATH, "-APP_NAME", $APP_NAME, "-WOPS_VERSION", $WOPS_VERSION -ErrorAction Stop
-        SuccessMessage "cert-oauth2 client installed successfully!"
+        & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ErrorAction Stop
     }
     catch {
         ErrorMessage "Error during wazuh-cert-oauth2-client installation: $($_.Exception.Message)"
-        throw
     }
 }
 

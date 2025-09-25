@@ -163,55 +163,11 @@ fi
 # Step 3: Install cert-oauth2 if the flag is set
 if [ "$INSTALL_CERT_OAUTH2" = "TRUE" ]; then
     info_message "Installing cert-oauth2..."
-    
-    # Check if Wazuh Agent is installed first
-    if ! maybe_sudo [ -d "$OSSEC_PATH" ]; then
-        error_message "Wazuh Agent not found at $OSSEC_PATH"
-        error_message "Please install Wazuh Agent first before installing cert-oauth2"
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-cert-oauth2.sh"
+    if ! (maybe_sudo env LOG_LEVEL="$LOG_LEVEL" OSSEC_CONF_PATH="$OSSEC_CONF_PATH" APP_NAME="$APP_NAME" WOPS_VERSION="$WOPS_VERSION" bash "$TMP_FOLDER/install-cert-oauth2.sh") 2>&1; then
+        error_message "Failed to install cert-oauth2"
         exit 1
     fi
-    
-    # Variables for cert-oauth2
-    WOPS_VERSION=${WOPS_VERSION:-"0.2.18"}
-    APP_NAME=${APP_NAME:-"wazuh-cert-oauth2-client"}
-    
-    info_message "Downloading cert-oauth2 installation script..."
-    info_message "Version: $WOPS_VERSION"
-    
-    OAUTH2_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.sh"
-    OAUTH2_SCRIPT="$TMP_FOLDER/cert-oauth2-install.sh"
-    
-    if ! curl -SL -s "$OAUTH2_URL" -o "$OAUTH2_SCRIPT"; then
-        error_message "Failed to download cert-oauth2 installation script"
-        exit 1
-    fi
-    
-    info_message "cert-oauth2 installation script downloaded successfully"
-    info_message "Installing cert-oauth2 client..."
-    
-    # Make script executable and run it
-    chmod +x "$OAUTH2_SCRIPT"
-    
-    # Export variables for the cert-oauth2 script
-    export LOG_LEVEL
-    export APP_NAME
-    export WOPS_VERSION
-    
-    if ! "$OAUTH2_SCRIPT"; then
-        error_message "cert-oauth2 installation failed"
-        exit 1
-    fi
-    
-    info_message "cert-oauth2 client installed successfully!"
-    
-    # Determine the correct path based on OS
-    if [ "$(uname)" = "Darwin" ]; then
-        OAUTH2_CLIENT_PATH="/Library/Ossec/bin/wazuh-cert-oauth2-client"
-    else
-        OAUTH2_CLIENT_PATH="/var/ossec/bin/wazuh-cert-oauth2-client"
-    fi
-    
-    info_message "You can now use: sudo $OAUTH2_CLIENT_PATH o-auth2"
 fi
 
 # Step 4: Download version file
