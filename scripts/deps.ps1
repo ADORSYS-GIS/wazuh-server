@@ -213,79 +213,87 @@ function Install-Chocolatey {
 }
 
 function Install-GnuSed {
-    # Define a test command to check if GNU sed is installed
-    $TestCommand = "sed --version"
-
-    try {
-        # Check if GNU sed is already installed
-        InfoMessage "[STEP 1/4] Checking if GNU sed is already installed..."
-        $versionOutput = & cmd /c $TestCommand 2>&1
-        if ($versionOutput -match "GNU sed") {
-            InfoMessage "GNU sed is already installed. Version: $($versionOutput -split '\n' | Select-Object -First 1)" 
-            return $true
-        }
-    } catch {
-        InfoMessage "GNU sed is not installed. Proceeding with Chocolatey installation..." 
-    }
-
-    try {
-        # Check if Chocolatey is available, install if needed
-        InfoMessage "[STEP 2/4] Checking Chocolatey availability..."
-        $chocoPath = "$env:ProgramData\chocolatey\bin\choco.exe"
-        
-        if (-not (Test-Path $chocoPath) -and -not (Get-Command choco -ErrorAction SilentlyContinue)) {
-            InfoMessage "Chocolatey not found. Installing Chocolatey first..."
-            if (-not (Install-Chocolatey)) {
-                ErrorMessage "Failed to install Chocolatey. Cannot proceed with GNU sed installation."
-                return $false
+    InfoMessage "[STEP 1/3] Checking if GNU sed is already installed..."
+    
+    # Function to test sed functionality
+    function Test-SedInstallation {
+        try {
+            # Refresh PATH first
+            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+            
+            # Test multiple ways to find sed
+            $sedPaths = @(
+                "sed",  # In PATH
+                "$env:ProgramData\chocolatey\bin\sed.exe",  # Chocolatey location
+                "$env:ProgramData\chocolatey\lib\sed\tools\sed.exe"  # Alternative Chocolatey location
+            )
+            
+            foreach ($sedPath in $sedPaths) {
+                try {
+                    $versionOutput = & $sedPath --version 2>$null
+                    if ($versionOutput -match "GNU sed") {
+                        InfoMessage "GNU sed found and functional. Version: $($versionOutput -split '\n' | Select-Object -First 1)"
+                        return $true
+                    }
+                } catch {
+                    # Continue to next path
+                }
             }
-        } else {
-            InfoMessage "Chocolatey is available"
-        }
-        
-        # Ensure we have the correct choco path
-        if (Test-Path $chocoPath) {
-            $chocoCommand = $chocoPath
-        } elseif (Get-Command choco -ErrorAction SilentlyContinue) {
-            $chocoCommand = "choco"
-        } else {
-            ErrorMessage "Chocolatey command not found after installation"
+            return $false
+        } catch {
             return $false
         }
-        
-        # Install sed using Chocolatey (silent by default)
-        InfoMessage "[STEP 3/4] Installing GNU sed via Chocolatey..."
+    }
+    
+    # Check if sed is already working
+    if (Test-SedInstallation) {
+        SuccessMessage "GNU sed is already installed and functional."
+        return $true
+    }
+
+    InfoMessage "[STEP 2/3] Installing GNU sed via Chocolatey..."
+    
+    # Ensure Chocolatey is available
+    $chocoPath = "$env:ProgramData\chocolatey\bin\choco.exe"
+    if (-not (Test-Path $chocoPath) -and -not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        InfoMessage "Chocolatey not found. Installing Chocolatey first..."
+        if (-not (Install-Chocolatey)) {
+            ErrorMessage "Failed to install Chocolatey. Cannot proceed with GNU sed installation."
+            return $false
+        }
+    }
+    
+    # Determine choco command to use
+    $chocoCommand = if (Test-Path $chocoPath) { $chocoPath } else { "choco" }
+    
+    try {
+        # Install sed using Chocolatey
         $chocoProcess = Start-Process -FilePath $chocoCommand -ArgumentList "install", "sed", "-y" -Wait -PassThru -NoNewWindow -ErrorAction Stop
         
+        # Check if installation was successful (exit code 0 means success, even if already installed)
         if ($chocoProcess.ExitCode -eq 0) {
-            InfoMessage "GNU sed installed successfully via Chocolatey"
+            InfoMessage "Chocolatey sed installation completed (exit code: $($chocoProcess.ExitCode))"
         } else {
             ErrorMessage "Chocolatey sed installation failed with exit code: $($chocoProcess.ExitCode)"
             return $false
         }
-
-        InfoMessage "[STEP 4/4] Verifying GNU sed installation..."
-        # Refresh environment variables
-        $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+        
+        InfoMessage "[STEP 3/3] Verifying GNU sed installation..."
+        
+        # Wait a moment for PATH to update
+        Start-Sleep -Seconds 2
         
         # Final verification
-        try {
-            $finalTest = & cmd /c "sed --version" 2>&1
-            if ($finalTest -match "GNU sed") {
-                SuccessMessage "GNU sed installation completed and verified successfully."
-                return $true
-            } else {
-                ErrorMessage "GNU sed installation verification failed."
-                return $false
-            }
-        } catch {
-            ErrorMessage "GNU sed installation verification failed: $($_.Exception.Message)"
+        if (Test-SedInstallation) {
+            SuccessMessage "GNU sed installation completed and verified successfully."
+            return $true
+        } else {
+            ErrorMessage "GNU sed installation verification failed - command not functional after installation."
             return $false
         }
         
     } catch {
-        # Catch and display any errors
-        ErrorMessage "GNU sed installation failed: $($_.Exception.Message)" 
+        ErrorMessage "GNU sed installation failed: $($_.Exception.Message)"
         return $false
     }
 }
