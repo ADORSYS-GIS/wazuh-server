@@ -22,6 +22,8 @@ OSSEC_CONF_PATH="$OSSEC_PATH/ossec.conf"
 WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
 WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
+WOPS_VERSION=${WOPS_VERSION:-'0.2.18'}
+APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
