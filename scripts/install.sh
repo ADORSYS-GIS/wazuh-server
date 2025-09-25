@@ -294,9 +294,9 @@ get_installed_version() {
         Darwin*)
             # macOS (PKG)
             if [ -f "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" ]; then
-                version=$(plutil -p "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" 2>/dev/null \
-                          | awk -F'"' '/PackageFileName/ {print $4}' \
-                          | sed -E 's/.*wazuh-agent-([0-9.]+-[0-9]+).*/\1/' || :)
+                plutil -p "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" 2>/dev/null | \
+                  awk -F'"' '/PackageFileName/ {print $4}' | \
+                  sed -E 's/.*wazuh-agent-([0-9.]+-[0-9]+).*/\1/'
             else
                 warn_message "Cannot determine installed version on macOS."
                 return 1
