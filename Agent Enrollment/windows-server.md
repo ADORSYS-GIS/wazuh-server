@@ -1,27 +1,22 @@
-# Windows Server Enrollment Guide
+# Windows Server Enrollment Guide (Agent + cert-oauth2 only)
 
-This guide walks you through the streamlined process of installing the Wazuh Agent on Windows Server systems. The installation focuses on core components only - Wazuh Agent with essential dependencies - providing a clean, silent installation perfect for headless/SSH environments.
+This guide installs the Wazuh Agent (with minimal dependencies) and enrolls it using cert-oauth2. It is designed for Windows Server endpoints and runs fully unattended except for the browser authentication during enrollment.
 
 ### Prerequisites
 
-- **Internet Connectivity:** Verify that the system is connected to the internet.
-- **Adiminstrator Privileges:** Ensure you open Powershell In Administrator Mode
+- **Internet connectivity**
+- **Run PowerShell as Administrator**
 
-## Step by step process
+## Step-by-step
 
-### Step 0: Set Execution Policy
-
-Set Execution Policy to Remote Signed to allow powershell scripts to run.
-
+### Step 0: Allow script execution 
 ```
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
+When prompted, choose A (Yes to All).
 
-When prompted, respond with A [Yes to All], to enable the execution policy.
-
-### Step 1: Download and Run the Setup Script
-
-Download the setup script from the repository and run it to configure the Wazuh agent with the necessary parameters for secure communication with the Wazuh Manager.
+### Step 1: Install the Wazuh Agent 
+Set your manager hostname, download the setup script, and run it. This installs only the core dependencies and the Wazuh Agent.
 
 ```powershell
 $env:WAZUH_MANAGER = "manager.wazuh.adorsys.team"
@@ -30,113 +25,60 @@ Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-serv
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1"
 ```
 
-### Step 2: Streamlined Installation Process
+- Optional: If you want to install the cert-oauth2 client during setup, add the flag:
+```powershell
+PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1" -InstallCertOAuth2
+```
 
-**Note:** This installation is fully automated and silent - no GUI interactions required!
+### Step 2: Enroll your agent with cert-oauth2
+1) Generate the enrollment URL:
+```powershell
+& 'C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe' o-auth2
+```
+Copy the URL printed by the command and open it in your browser.
 
-The streamlined script will automatically install:
+2) Authenticate in the browser:
+- Login using Active Directories: `Adorsys GIS` or `adorsys GmbH & CO KG` (Keycloak based)
 
-- **Core dependencies:** curl and jq only
-- **Wazuh Agent:** Latest version with silent installation
-- **Configuration:** Automatic manager connection setup
-- **Service management:** Automatic service start and verification
+![Login](./images/linux/Screenshot%20from%202024-12-20%2008-28-14.png)
 
-**The installation completes automatically without additional components like OAuth2, Suricata, or YARA.**
+- Complete two‑factor authentication if prompted
 
-### Step 3: Validate the Installation
+![Two-Factor Authentication](./images/linux/Screenshot%20from%202024-12-20%2008-29-08.png)
 
-After the streamlined installation completes, verify that the agent is properly installed and functioning:
+- A token will be generated upon success
 
-#### 1. Check the Agent Service:
+![Token generation](./images/linux/Screenshot%20from%202024-12-20%2008-28-45.png)
 
-Verify the Wazuh service is running:
+3) Complete the enrollment:
+Return to PowerShell and follow the client prompts to paste/confirm the token and finish.
 
+- Optional: Reboot the server after enrollment if requested by IT policy.
+
+## Validate the installation
+- Check service status:
 ```powershell
 Get-Service -Name "WazuhSvc"
 ```
 
-#### 2. Verify Agent Logs:
-
-Check the Wazuh agent logs to ensure there are no errors:
-
+- Tail recent agent logs:
 ```powershell
 Get-Content 'C:\Program Files (x86)\ossec-agent\ossec.log' -Tail 20
 ```
 
-Check the Wazuh agent logs to ensure there are no errors:
-
-#### 3. Check Agent Configuration:
-
-Verify the manager connection is configured:
-
+- Confirm manager configuration exists:
 ```powershell
 Select-String -Path 'C:\Program Files (x86)\ossec-agent\ossec.conf' -Pattern '<server>'
 ```
 
-#### 4. Check the Wazuh Manager Dashboard:
-
-Ping an admin for confirmation that the agent appears in the Wazuh Manager dashboard.
-
-## Components Installed by the Streamlined Script
-
-### Core Dependencies:
-
-- **curl:** For downloading files and making HTTP requests
-- **jq:** For JSON processing and configuration management
-
-### Wazuh Agent:
-
-- **Wazuh Agent:** Monitors your endpoint and sends data to the Wazuh Manager
-- **Configuration:** Automatically configured to connect to the specified manager (WAZUH_MANAGER)
-- **Service:** Installed and started as a Windows service (WazuhSvc)
-- **Active Response:** Configured for log monitoring and response capabilities
-
-### Validation Commands:
-
-```powershell
-# Check service status
-Get-Service -Name "WazuhSvc"
-
-# Verify agent logs
-Get-Content 'C:\Program Files (x86)\ossec-agent\ossec.log' -Tail 10
-
-# Check configuration
-Select-String -Path 'C:\Program Files (x86)\ossec-agent\ossec.conf' -Pattern '<server>'
-```
-
-### iii. Installation Validation:
-
-- Test registration successful
-- Logs reviewed for errors
-- Cleanup Completed
-
-## Troubleshooting
-
-- If the enrollment URL fails to generate, check internet connectivity and script permissions.
-
-- For errors during authentication, ensure Active Directory credentials are correct and two-factor authentication is set up.
-
-- Consult the Wazuh logs (C:\Program Files (x86)\ossec-agent\ossec.log) for detailed error messages.
-  ```powershell
-  Get-Content 'C:\Program Files (x86)\ossec-agent\ossec.log' -Tail 20
-  ```
-
-## Uninstallation Guide
-
-Should you need to uninstall the Wazuh agent, follow these steps:
-
-### Step 1: Download and Run the Uninstall Script
-
-Download the uninstall script from the repository and run it to remove the Wazuh agent and its components.
-
+## Uninstallation (when needed)
+Run elevated PowerShell and execute the uninstall wrapper. This delegates to the inner uninstall and removes the agent cleanly.
 ```powershell
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.2-rc1/scripts/uninstall-server.ps1' `
   -UseBasicParsing -OutFile "$env:TEMP\uninstall-server.ps1"; `
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\uninstall-server.ps1"
 ```
 
-**Note:** The streamlined uninstall script automatically detects if Wazuh Agent is installed and removes only the core components. No additional parameters needed.
-
-### Additional Resources
-
-- [Wazuh Documentation](https://documentation.wazuh.com/current/user-manual/agent/index.html#wazuh-agent)
+### Notes
+- The setup installs only: curl, jq, and the Wazuh Agent
+- cert-oauth2 client is optional; enrollment requires a browser login to obtain a token 
