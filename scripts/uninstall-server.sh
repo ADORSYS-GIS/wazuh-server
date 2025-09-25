@@ -13,9 +13,11 @@ fi
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.4'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
+UNINSTALL_SURICATA="FALSE"
 
 TMP_FOLDER="$(mktemp -d)"
 
@@ -76,10 +78,38 @@ cleanup() {
 trap cleanup EXIT
 
 # ==============================================================================
+# CLI Parsing
+# ==============================================================================
+show_help() {
+    echo "Usage: $0 [-s] [-t] [-h]"
+    echo ""
+    echo "Streamlined Wazuh uninstallation for Linux servers"
+    echo ""
+    echo "Options:"
+    echo "  -s    Uninstall Suricata (optional)"
+    echo "  -t    Uninstall Trivy (optional)"
+    echo "  -h    Show this help message"
+    echo ""
+    echo "Environment Variables:"
+    echo "  WAZUH_SERVER_TAG        Repository tag for server scripts (default: $WAZUH_SERVER_TAG)"
+    echo "  WAZUH_SURICATA_VERSION  Suricata installer tag (default: $WAZUH_SURICATA_VERSION)"
+}
+
+while getopts ":sth" opt; do
+  case $opt in
+    s) UNINSTALL_SURICATA="TRUE" ;;
+    t) UNINSTALL_TRIVY="TRUE" ;;
+    h) show_help; exit 0 ;;
+    \?) echo "Invalid option: -$OPTARG" >&2; show_help; exit 1 ;;
+  esac
+done
+
+# ==============================================================================
 # Main Uninstallation Logic
 # ==============================================================================
 
 info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\""
+info_message "Options: UNINSTALL_SURICATA=$UNINSTALL_SURICATA UNINSTALL_TRIVY=$UNINSTALL_TRIVY"
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
@@ -87,6 +117,9 @@ curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags
 
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
+fi
+if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 
 
@@ -103,6 +136,19 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     if ! (bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
         error_message "Failed to uninstall 'trivy'"
         exit 1
+    fi
+fi
+
+# Step 3: Uninstall Suricata if the flag is set
+if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
+    if command_exists suricata; then
+        print_step 3 "Uninstalling suricata..."
+        if ! (bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
+            error_message "Failed to uninstall 'suricata'"
+            exit 1
+        fi
+    else
+        info_message "Suricata not found on system. Skipping."
     fi
 fi
 
