@@ -6,6 +6,7 @@
 
 param(
     [switch]$InstallCertOAuth2,
+    [switch]$InstallSuricata,
     [switch]$Help
 )
 
@@ -134,6 +135,24 @@ function Install-OAuth2Client {
     }
 }
 
+function Install-SuricataClient {
+    $SuricataUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/install.ps1"
+    $SuricataScript = "$env:TEMP\wazuh-suricata-install.ps1"
+    $global:InstallerFiles += $SuricataScript
+
+    try {
+        InfoMessage "Downloading and executing Suricata installation script..."
+        Invoke-WebRequest -Uri $SuricataUrl -OutFile $SuricataScript -ErrorAction Stop
+        InfoMessage "Suricata script downloaded successfully."
+        & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -Mode ids -ErrorAction Stop
+        SuccessMessage "Suricata installed successfully in IDS mode"
+    }
+    catch {
+        ErrorMessage "Error during Suricata installation: $($_.Exception.Message)"
+        throw
+    }
+}
+
 function DownloadVersionFile {
     InfoMessage "Downloading version file..."
     if (!(Test-Path -Path $OSSEC_PATH)) {
@@ -150,12 +169,13 @@ function DownloadVersionFile {
 }
 
 function Show-Help {
-    Write-Host "Usage:  .\setup-server.ps1 [-InstallCertOAuth2] [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\setup-server.ps1 [-InstallCertOAuth2] [-InstallSuricata] [-Help]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Streamlined Wazuh Agent installation for Windows Server environments." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
     Write-Host "  -InstallCertOAuth2    Install cert-oauth2 client (optional)" -ForegroundColor White
+    Write-Host "  -InstallSuricata      Install Suricata (optional, IDS mode)" -ForegroundColor White
     Write-Host "  -Help                 Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Environment Variables:" -ForegroundColor Yellow
@@ -167,7 +187,8 @@ function Show-Help {
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\setup-server.ps1                                    # Core installation only" -ForegroundColor Cyan
     Write-Host "  .\setup-server.ps1 -InstallCertOAuth2                 # With cert-oauth2" -ForegroundColor Cyan
-    Write-Host "  $env:WAZUH_MANAGER='my-wazuh.com'; .\setup-server.ps1 -InstallCertOAuth2" -ForegroundColor Cyan
+    Write-Host "  .\setup-server.ps1 -InstallSuricata                   # With Suricata (IDS)" -ForegroundColor Cyan
+    Write-Host "  $env:WAZUH_MANAGER='my-wazuh.com'; .\setup-server.ps1 -InstallCertOAuth2 -InstallSuricata" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -194,6 +215,12 @@ try {
         Install-OAuth2Client
     }
     
+    # Install Suricata if the flag is set
+    if ($InstallSuricata) {
+        SectionSeparator "Installing Suricata"
+        Install-SuricataClient
+    }
+    
     SectionSeparator "Downloading Version File"
     DownloadVersionFile
     
@@ -204,6 +231,9 @@ try {
     if ($InstallCertOAuth2) {
         InfoMessage "  [+] cert-oauth2 client for enhanced security"
         InfoMessage "  [+] Run: C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe o-auth2"
+    }
+    if ($InstallSuricata) {
+        InfoMessage "  [+] Suricata IDS for network monitoring"
     }
     InfoMessage "  [+] Version file downloaded"
     InfoMessage ""

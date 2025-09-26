@@ -3,6 +3,7 @@
 #Requires -RunAsAdministrator
 
 param(
+    [switch]$UninstallSuricata,
     [switch]$Help
 )
 
@@ -53,12 +54,13 @@ function Remove-UninstallerFiles {
 
 # Help Function
 function Show-Help {
-    Write-Host "Usage:  .\uninstall-server.ps1 [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\uninstall-server.ps1 [-UninstallSuricata] [-Help]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "This script uninstalls the Wazuh Agent from Windows Server environments." -ForegroundColor Cyan
-    Write-Host "Streamlined for Wazuh Agent-only removal (delegates to inner uninstall script)." -ForegroundColor Cyan
+    Write-Host "Streamlined for Wazuh Agent removal with optional Suricata uninstallation." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
+    Write-Host "  -UninstallSuricata     : Also uninstall Suricata (optional)" -ForegroundColor Cyan
     Write-Host "  -Help                  : Displays this help message." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Environment Variables (optional):" -ForegroundColor Cyan
@@ -66,9 +68,9 @@ function Show-Help {
     Write-Host "  WAZUH_SERVER_TAG       : Repository tag to fetch uninstall script. Default: $WAZUH_SERVER_TAG" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
-    Write-Host "  .\uninstall-server.ps1 -Help" -ForegroundColor Cyan
-    Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1" -ForegroundColor Cyan
-    Write-Host "  `$env:WAZUH_SERVER_TAG='0.1.2-rc1'; .\uninstall-server.ps1" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1 -UninstallSuricata" -ForegroundColor Cyan
+    Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1 -UninstallSuricata" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -76,6 +78,34 @@ function Show-Help {
 if ($Help) {
     Show-Help
     Exit 0
+}
+
+# Function to uninstall Suricata
+function Uninstall-SuricataClient {
+    $UninstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.ps1"
+    $UninstallerPath = "$env:TEMP\uninstall-suricata.ps1"
+    $global:UninstallerFiles += $UninstallerPath
+
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            InfoMessage "Downloading Suricata uninstall script (attempt $attempt of $maxAttempts)..."
+            Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+            if ((Get-Item $UninstallerPath).Length -le 64) {
+                throw "Downloaded file appears too small or empty."
+            }
+            InfoMessage "Suricata uninstall script downloaded successfully. Executing..."
+            & PowerShell -ExecutionPolicy Bypass -File $UninstallerPath
+            return $true
+        }
+        catch {
+            WarningMessage "Attempt $attempt failed: $($_.Exception.Message)"
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+    }
+
+    ErrorMessage "Failed to download or execute Suricata uninstall script after $maxAttempts attempts."
+    return $false
 }
 
 # Function to uninstall Wazuh Agent by delegating to inner script
@@ -110,6 +140,15 @@ function Uninstall-WazuhAgent {
 $overallSuccess = $true
 
 try {
+    # Uninstall Suricata if the flag is set
+    if ($UninstallSuricata) {
+        SectionSeparator "Uninstalling Suricata"
+        if (-not (Uninstall-SuricataClient)) {
+            ErrorMessage "Suricata uninstallation failed."
+            $overallSuccess = $false
+        }
+    }
+    
     SectionSeparator "Uninstalling Wazuh Agent"
     if (-not (Uninstall-WazuhAgent)) {
         ErrorMessage "Wazuh Agent uninstallation failed."
