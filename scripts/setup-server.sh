@@ -49,7 +49,6 @@ while getopts ":hcs" opt; do
        echo "  WAZUH_MANAGER         Wazuh manager hostname (default: wazuh.example.com)"
        echo "  WAZUH_AGENT_VERSION   Wazuh agent version (default: 4.12.0-1)"
        echo "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.1)"
-       echo "  WAZUH_SURICATA_VERSION Suricata installer tag (default: 0.1.4)"
        echo "  LOG_LEVEL            Logging level (default: INFO)"
        echo ""
        echo "Examples:"
@@ -182,7 +181,7 @@ fi
 # Step 4: Install Suricata if the flag is set (IDS mode)
 if [ "$INSTALL_SURICATA" = "TRUE" ]; then
     info_message "Installing Suricata (IDS mode)..."
-    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-suricata.sh"
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/install.sh" > "$TMP_FOLDER/install-suricata.sh"
     if ! (maybe_sudo bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
         error_message "Failed to install Suricata"
         exit 1

@@ -92,7 +92,6 @@ show_help() {
     echo ""
     echo "Environment Variables:"
     echo "  WAZUH_SERVER_TAG        Repository tag for server scripts (default: $WAZUH_SERVER_TAG)"
-    echo "  WAZUH_SURICATA_VERSION  Suricata installer tag (default: $WAZUH_SURICATA_VERSION)"
 }
 
 while getopts ":sth" opt; do
@@ -119,7 +118,7 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
 fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
-    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 
 
