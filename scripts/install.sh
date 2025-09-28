@@ -279,19 +279,21 @@ enable_repo() {
 get_installed_version() {
     case "$(uname -s)" in
         Linux*)
+            local version=""
             # Ubuntu/Debian
-            if command -v dpkg >/dev/null; then
-                dpkg -l | awk '/wazuh-agent/ {print $3; exit}'
+            if command -v dpkg >/dev/null 2>&1; then
+                version=$(dpkg -l 2>/dev/null | awk '/wazuh-agent/ {print $3; exit}' || true)
             # RHEL/CentOS
-            elif command -v rpm >/dev/null; then
-                rpm -qa --queryformat '%{VERSION}-%{RELEASE}\n' wazuh-agent 2>/dev/null | head -1
+            elif command -v rpm >/dev/null 2>&1; then
+                version=$(rpm -qa --queryformat '%{VERSION}-%{RELEASE}\n' wazuh-agent 2>/dev/null | head -1 || true)
             else
                 warn_message "Cannot determine installed version on Linux."
                 exit 0
             fi
+            echo "${version:-}"
             ;;
         Darwin*)
-            # macOS (PKG)
+             # macOS (PKG)
             if [ -f "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" ]; then
                 plutil -p "/var/db/receipts/com.wazuh.pkg.wazuh-agent.plist" 2>/dev/null | \
                 awk -F'"' '/PackageFileName/ {print $4}' | \
@@ -301,8 +303,13 @@ get_installed_version() {
                 exit 0
             fi
             ;;
+        *)
+            warn_message "Unsupported OS: $(uname -s)"
+            exit 0
+            ;;
     esac
 }
+
 
 config() {
     REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main"

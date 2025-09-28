@@ -46,6 +46,8 @@ error_message() { log "${RED}${BOLD}[ERROR]${NORMAL}" "$*"; }
 success_message() { log "${GREEN}${BOLD}[SUCCESS]${NORMAL}" "$*"; }
 print_step() { log "${BLUE}${BOLD}[STEP]${NORMAL}" "$1: $2"; }
 
+
+
 # Check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -87,6 +89,7 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
 fi
 
+
 # Step 1: Uninstall Wazuh agent
 print_step 1 "Uninstalling Wazuh agent..."
 if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-server.sh") 2>&1; then
@@ -96,7 +99,7 @@ fi
 
 # Step 2: Uninstall Trivy if the flag is set
 if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
-    print_step 5 "Uninstalling trivy..."
+    print_step 2 "Uninstalling trivy..."
     if ! (bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
         error_message "Failed to uninstall 'trivy'"
         exit 1
