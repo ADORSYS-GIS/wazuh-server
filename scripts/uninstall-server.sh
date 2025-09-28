@@ -142,7 +142,7 @@ fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
     if command_exists suricata; then
         print_step 3 "Uninstalling suricata..."
-        if ! (bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
+        if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
             error_message "Failed to uninstall 'suricata'"
             exit 1
         fi
