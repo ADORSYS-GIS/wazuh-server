@@ -14,6 +14,7 @@ Set-StrictMode -Version Latest
 $LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
 $WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.2-rc1" }
 $RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
+$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feature/automated-powershell-installation"
 
 # Global array to track uninstaller files
 $global:UninstallerFiles = @()
@@ -60,7 +61,7 @@ function Show-Help {
     Write-Host "Streamlined for Wazuh Agent removal with optional Suricata uninstallation." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
-    Write-Host "  -UninstallSuricata     : Also uninstall Suricata (optional)" -ForegroundColor Cyan
+    Write-Host "  -UninstallSuricata     : Also uninstall Suricata with automated cleanup (optional)" -ForegroundColor Cyan
     Write-Host "  -Help                  : Displays this help message." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Environment Variables (optional):" -ForegroundColor Cyan
@@ -69,7 +70,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\uninstall-server.ps1" -ForegroundColor Cyan
-    Write-Host "  .\uninstall-server.ps1 -UninstallSuricata" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1 -UninstallSuricata                    # With automated Suricata removal" -ForegroundColor Cyan
     Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1 -UninstallSuricata" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -80,22 +81,23 @@ if ($Help) {
     Exit 0
 }
 
-# Function to uninstall Suricata
+# Function to uninstall Suricata using automated script
 function Uninstall-SuricataClient {
-    $UninstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.ps1"
-    $UninstallerPath = "$env:TEMP\uninstall-suricata.ps1"
+    $UninstallerURL = "$SuricataRepoUrl/scripts/uninstall-automated.ps1"
+    $UninstallerPath = "$env:TEMP\uninstall-suricata-automated.ps1"
     $global:UninstallerFiles += $UninstallerPath
 
     $maxAttempts = 3
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
-            InfoMessage "Downloading Suricata uninstall script (attempt $attempt of $maxAttempts)..."
+            InfoMessage "Downloading automated Suricata uninstall script (attempt $attempt of $maxAttempts)..."
             Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }
-            InfoMessage "Suricata uninstall script downloaded successfully. Executing..."
+            InfoMessage "Automated Suricata uninstall script downloaded successfully. Executing..."
             & PowerShell -ExecutionPolicy Bypass -File $UninstallerPath
+            SuccessMessage "Suricata automated uninstallation completed"
             return $true
         }
         catch {
@@ -104,7 +106,7 @@ function Uninstall-SuricataClient {
         }
     }
 
-    ErrorMessage "Failed to download or execute Suricata uninstall script after $maxAttempts attempts."
+    ErrorMessage "Failed to download or execute automated Suricata uninstall script after $maxAttempts attempts."
     return $false
 }
 
