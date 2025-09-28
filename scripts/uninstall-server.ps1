@@ -83,34 +83,6 @@ if ($Help) {
     Exit 0
 }
 
-# Function to uninstall cert-oauth2 client
-function Uninstall-OAuth2Client {
-    $UninstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v0.2.18/scripts/uninstall.ps1"
-    $UninstallerPath = "$env:TEMP\uninstall-cert-oauth2.ps1"
-    $global:UninstallerFiles += $UninstallerPath
-
-    $maxAttempts = 3
-    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-        try {
-            InfoMessage "Downloading cert-oauth2 uninstall script (attempt $attempt of $maxAttempts)..."
-            Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
-            if ((Get-Item $UninstallerPath).Length -le 64) {
-                throw "Downloaded file appears too small or empty."
-            }
-            InfoMessage "cert-oauth2 uninstall script downloaded successfully. Executing..."
-            & PowerShell -ExecutionPolicy Bypass -File $UninstallerPath
-            SuccessMessage "cert-oauth2 client uninstallation completed"
-            return $true
-        }
-        catch {
-            WarningMessage "Attempt $attempt failed: $($_.Exception.Message)"
-            Start-Sleep -Seconds (2 * $attempt)
-        }
-    }
-
-    ErrorMessage "Failed to download or execute cert-oauth2 uninstall script after $maxAttempts attempts."
-    return $false
-}
 
 # Function to uninstall Suricata using automated script
 function Uninstall-SuricataClient {
@@ -173,15 +145,6 @@ function Uninstall-WazuhAgent {
 $overallSuccess = $true
 
 try {
-    # Uninstall cert-oauth2 if the flag is set
-    if ($UninstallCertOAuth2) {
-        SectionSeparator "Uninstalling cert-oauth2 Client"
-        if (-not (Uninstall-OAuth2Client)) {
-            ErrorMessage "cert-oauth2 client uninstallation failed."
-            $overallSuccess = $false
-        }
-    }
-    
     # Uninstall Suricata if the flag is set
     if ($UninstallSuricata) {
         SectionSeparator "Uninstalling Suricata"
