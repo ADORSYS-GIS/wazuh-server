@@ -25,24 +25,27 @@ WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 WOPS_VERSION=${WOPS_VERSION:-'0.2.18'}
 APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
 WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.4'}
+WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
 INSTALL_CERT_OAUTH2="FALSE"
 INSTALL_SURICATA="FALSE"
+INSTALL_YARA="FALSE"
 
 # Parse command line options
-while getopts ":hcs" opt; do
+while getopts ":hcsy" opt; do
   case $opt in
     c) INSTALL_CERT_OAUTH2="TRUE"
     ;;
-    h) echo "Usage: $0 [-c] [-h]"
+    h) echo "Usage: $0 [-c] [-s] [-y] [-h]"
        echo ""
        echo "Streamlined Wazuh Agent installation for Linux servers"
        echo ""
        echo "Options:"
        echo "  -c    Install cert-oauth2 client (optional)"
        echo "  -s    Install Suricata (optional, IDS mode)"
+       echo "  -y    Install Yara (optional)"
        echo "  -h    Show this help message"
        echo ""
        echo "Environment Variables:"
@@ -55,11 +58,15 @@ while getopts ":hcs" opt; do
        echo "  $0                    # Core installation only"
        echo "  $0 -c                 # With cert-oauth2"
        echo "  $0 -s                 # With Suricata (IDS)"
+       echo "  $0 -y                 # With Yara"
+       echo "  $0 -c -s -y           # With all optional components"
        echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
        echo ""
        exit 0
     ;;
     s) INSTALL_SURICATA="TRUE"
+    ;;
+    y) INSTALL_YARA="TRUE"
     ;;
     \?) echo "Invalid option: -$OPTARG" >&2
         echo "Use -h for help"
@@ -137,7 +144,7 @@ trap cleanup EXIT
 # ==============================================================================
 
 info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA"
+info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA INSTALL_YARA=$INSTALL_YARA"
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
@@ -188,7 +195,17 @@ if [ "$INSTALL_SURICATA" = "TRUE" ]; then
     fi
 fi
 
-# Step 4: Download version file
+# Step 5: Install Yara if the flag is set
+if [ "$INSTALL_YARA" = "TRUE" ]; then
+    info_message "Installing Yara..."
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-yara.sh"
+    if ! (maybe_sudo env LOG_LEVEL="$LOG_LEVEL" OSSEC_CONF_PATH="$OSSEC_CONF_PATH" WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara.sh") 2>&1; then
+        error_message "Failed to install Yara"
+        exit 1
+    fi
+fi
+
+# Step 6: Download version file
 info_message "Downloading version file..."
 if ! (maybe_sudo curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG/version.txt" -o "$OSSEC_PATH/version.txt") 2>&1; then
     error_message "Failed to download version file"
