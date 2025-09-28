@@ -3,7 +3,6 @@
 #Requires -RunAsAdministrator
 
 param(
-    [switch]$UninstallCertOAuth2,
     [switch]$UninstallSuricata,
     [switch]$Help
 )
@@ -14,8 +13,9 @@ Set-StrictMode -Version Latest
 # Variables
 $LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
 $WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.3" }
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
-$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feature/automated-powershell-installation"
+$WAZUH_SURICATA_VERSION = if ($env:WAZUH_SURICATA_VERSION) { $env:WAZUH_SURICATA_VERSION } else { "0.1.5" }
+$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
+$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION"
 
 # Global array to track uninstaller files
 $global:UninstallerFiles = @()
@@ -56,19 +56,19 @@ function Remove-UninstallerFiles {
 
 # Help Function
 function Show-Help {
-    Write-Host "Usage:  .\uninstall-server.ps1 [-UninstallCertOAuth2] [-UninstallSuricata] [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\uninstall-server.ps1 [-UninstallSuricata] [-Help]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "This script uninstalls the Wazuh Agent from Windows Server environments." -ForegroundColor Cyan
     Write-Host "Streamlined for Wazuh Agent removal with optional Suricata uninstallation." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
-    Write-Host "  -UninstallCertOAuth2   : Also uninstall cert-oauth2 client (optional)" -ForegroundColor Cyan
     Write-Host "  -UninstallSuricata     : Also uninstall Suricata with automated cleanup (optional)" -ForegroundColor Cyan
     Write-Host "  -Help                  : Displays this help message." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Environment Variables (optional):" -ForegroundColor Cyan
     Write-Host "  LOG_LEVEL              : Sets the logging level (e.g., INFO, DEBUG). Default: INFO" -ForegroundColor Cyan
     Write-Host "  WAZUH_SERVER_TAG       : Repository tag to fetch uninstall script. Default: $WAZUH_SERVER_TAG" -ForegroundColor Cyan
+    Write-Host "  WAZUH_SURICATA_VERSION : Suricata version to uninstall. Default: $WAZUH_SURICATA_VERSION" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\uninstall-server.ps1 -Help" -ForegroundColor Cyan
@@ -143,7 +143,7 @@ function Uninstall-SuricataClient {
 
 # Function to uninstall Wazuh Agent by delegating to inner script
 function Uninstall-WazuhAgent {
-    $UninstallerURL = "$RepoUrl/scripts/uninstall.ps1"
+    $UninstallerURL = "$REPO_URL/scripts/uninstall.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-wazuh-agent.ps1"
     $global:UninstallerFiles += $UninstallerPath
 

@@ -13,6 +13,7 @@ fi
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
@@ -117,7 +118,7 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
 fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
-    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 
 
