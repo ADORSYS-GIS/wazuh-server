@@ -23,6 +23,7 @@ $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-clien
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
 $RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/cert-oauth2"
+$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feature/automated-powershell-installation"
 $VERSION_FILE_URL = "$RepoUrl/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
@@ -136,16 +137,16 @@ function Install-OAuth2Client {
 }
 
 function Install-SuricataClient {
-    $SuricataUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/install.ps1"
-    $SuricataScript = "$env:TEMP\wazuh-suricata-install.ps1"
+    $SuricataUrl = "$SuricataRepoUrl/scripts/install-suricata-silent.ps1"
+    $SuricataScript = "$env:TEMP\install-suricata-silent.ps1"
     $global:InstallerFiles += $SuricataScript
 
     try {
-        InfoMessage "Downloading and executing Suricata installation script..."
+        InfoMessage "Downloading and executing silent Suricata installation script..."
         Invoke-WebRequest -Uri $SuricataUrl -OutFile $SuricataScript -ErrorAction Stop
-        InfoMessage "Suricata script downloaded successfully."
-        & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -Mode ids -ErrorAction Stop
-        SuccessMessage "Suricata installed successfully in IDS mode"
+        InfoMessage "Silent Suricata script downloaded successfully."
+        & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
+        SuccessMessage "Suricata installed successfully with automated silent installation"
     }
     catch {
         ErrorMessage "Error during Suricata installation: $($_.Exception.Message)"
@@ -175,7 +176,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Yellow
     Write-Host "  -InstallCertOAuth2    Install cert-oauth2 client (optional)" -ForegroundColor White
-    Write-Host "  -InstallSuricata      Install Suricata (optional, IDS mode)" -ForegroundColor White
+    Write-Host "  -InstallSuricata      Install Suricata with silent automation (optional)" -ForegroundColor White
     Write-Host "  -Help                 Show this help message" -ForegroundColor White
     Write-Host ""
     Write-Host "Environment Variables:" -ForegroundColor Yellow
@@ -187,7 +188,7 @@ function Show-Help {
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\setup-server.ps1                                    # Core installation only" -ForegroundColor Cyan
     Write-Host "  .\setup-server.ps1 -InstallCertOAuth2                 # With cert-oauth2" -ForegroundColor Cyan
-    Write-Host "  .\setup-server.ps1 -InstallSuricata                   # With Suricata (IDS)" -ForegroundColor Cyan
+    Write-Host "  .\setup-server.ps1 -InstallSuricata                   # With silent Suricata" -ForegroundColor Cyan
     Write-Host "  $env:WAZUH_MANAGER='my-wazuh.com'; .\setup-server.ps1 -InstallCertOAuth2 -InstallSuricata" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -233,7 +234,7 @@ try {
         InfoMessage "  [+] Run: C:\Program Files (x86)\ossec-agent\wazuh-cert-oauth2-client.exe o-auth2"
     }
     if ($InstallSuricata) {
-        InfoMessage "  [+] Suricata IDS for network monitoring"
+        InfoMessage "  [+] Suricata IDS with automated silent installation"
     }
     InfoMessage "  [+] Version file downloaded"
     InfoMessage ""
