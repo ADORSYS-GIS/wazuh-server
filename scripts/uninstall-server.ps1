@@ -3,6 +3,7 @@
 #Requires -RunAsAdministrator
 
 param(
+    [switch]$UninstallCertOAuth2,
     [switch]$UninstallSuricata,
     [switch]$Help
 )
@@ -55,12 +56,13 @@ function Remove-UninstallerFiles {
 
 # Help Function
 function Show-Help {
-    Write-Host "Usage:  .\uninstall-server.ps1 [-UninstallSuricata] [-Help]" -ForegroundColor Cyan
+    Write-Host "Usage:  .\uninstall-server.ps1 [-UninstallCertOAuth2] [-UninstallSuricata] [-Help]" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "This script uninstalls the Wazuh Agent from Windows Server environments." -ForegroundColor Cyan
     Write-Host "Streamlined for Wazuh Agent removal with optional Suricata uninstallation." -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Parameters:" -ForegroundColor Cyan
+    Write-Host "  -UninstallCertOAuth2   : Also uninstall cert-oauth2 client (optional)" -ForegroundColor Cyan
     Write-Host "  -UninstallSuricata     : Also uninstall Suricata with automated cleanup (optional)" -ForegroundColor Cyan
     Write-Host "  -Help                  : Displays this help message." -ForegroundColor Cyan
     Write-Host ""
@@ -69,9 +71,11 @@ function Show-Help {
     Write-Host "  WAZUH_SERVER_TAG       : Repository tag to fetch uninstall script. Default: $WAZUH_SERVER_TAG" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Cyan
-    Write-Host "  .\uninstall-server.ps1" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1                                       # Core uninstall only" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1 -UninstallCertOAuth2                  # With cert-oauth2 removal" -ForegroundColor Cyan
     Write-Host "  .\uninstall-server.ps1 -UninstallSuricata                    # With automated Suricata removal" -ForegroundColor Cyan
-    Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1 -UninstallSuricata" -ForegroundColor Cyan
+    Write-Host "  .\uninstall-server.ps1 -UninstallCertOAuth2 -UninstallSuricata # Complete uninstall" -ForegroundColor Cyan
+    Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1 -UninstallCertOAuth2 -UninstallSuricata" -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -79,6 +83,35 @@ function Show-Help {
 if ($Help) {
     Show-Help
     Exit 0
+}
+
+# Function to uninstall cert-oauth2 client
+function Uninstall-OAuth2Client {
+    $UninstallerURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v0.2.18/scripts/uninstall.ps1"
+    $UninstallerPath = "$env:TEMP\uninstall-cert-oauth2.ps1"
+    $global:UninstallerFiles += $UninstallerPath
+
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            InfoMessage "Downloading cert-oauth2 uninstall script (attempt $attempt of $maxAttempts)..."
+            Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+            if ((Get-Item $UninstallerPath).Length -le 64) {
+                throw "Downloaded file appears too small or empty."
+            }
+            InfoMessage "cert-oauth2 uninstall script downloaded successfully. Executing..."
+            & PowerShell -ExecutionPolicy Bypass -File $UninstallerPath
+            SuccessMessage "cert-oauth2 client uninstallation completed"
+            return $true
+        }
+        catch {
+            WarningMessage "Attempt $attempt failed: $($_.Exception.Message)"
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+    }
+
+    ErrorMessage "Failed to download or execute cert-oauth2 uninstall script after $maxAttempts attempts."
+    return $false
 }
 
 # Function to uninstall Suricata using automated script
@@ -142,6 +175,15 @@ function Uninstall-WazuhAgent {
 $overallSuccess = $true
 
 try {
+    # Uninstall cert-oauth2 if the flag is set
+    if ($UninstallCertOAuth2) {
+        SectionSeparator "Uninstalling cert-oauth2 Client"
+        if (-not (Uninstall-OAuth2Client)) {
+            ErrorMessage "cert-oauth2 client uninstallation failed."
+            $overallSuccess = $false
+        }
+    }
+    
     # Uninstall Suricata if the flag is set
     if ($UninstallSuricata) {
         SectionSeparator "Uninstalling Suricata"
