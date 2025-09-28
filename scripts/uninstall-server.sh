@@ -125,7 +125,7 @@ if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 if [ "$UNINSTALL_YARA" = "TRUE" ]; then
-    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-yara.sh"
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall-server.sh > "$TMP_FOLDER/uninstall-yara-server.sh"
 fi
 
 
@@ -162,7 +162,7 @@ fi
 if [ "$UNINSTALL_YARA" = "TRUE" ]; then
     if command_exists yara; then
         print_step 4 "Uninstalling yara..."
-        if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-yara.sh") 2>&1; then
+        if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-yara-server.sh") 2>&1; then
             error_message "Failed to uninstall 'yara'"
             exit 1
         fi
