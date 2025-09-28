@@ -11,6 +11,8 @@ fi
 LOG_LEVEL=${LOG_LEVEL:-INFO}
 WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
 WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
+REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
 
 # Define text formatting
 RED='\033[0;31m'
@@ -312,8 +314,6 @@ get_installed_version() {
 
 
 config() {
-    REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main"
-
     # Replace MANAGER_IP placeholder with the actual manager IP in ossec.conf for unix systems
     if ! maybe_sudo grep -q "<address>$WAZUH_MANAGER</address>" "$OSSEC_CONF_PATH"; then
         # First remove <address till address>

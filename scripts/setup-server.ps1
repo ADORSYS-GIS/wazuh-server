@@ -17,14 +17,14 @@ Set-StrictMode -Version Latest
 $LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
 $WAZUH_MANAGER = if ($env:WAZUH_MANAGER) { $env:WAZUH_MANAGER } else { "wazuh.example.com" }
 $WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.12.0-1" }
-$WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.2-rc1" }
+$WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.3" }
 $WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.2.18" }
 $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-client" }
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/feat/cert-oauth2"
+$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
 $SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feature/automated-powershell-installation"
-$VERSION_FILE_URL = "$RepoUrl/version.txt"
+$VERSION_FILE_URL = "$REPO_URL/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
 # Global array to track installer files
@@ -84,7 +84,7 @@ function Remove-InstallerFiles {
 
 # Step 1: Download dependency script and execute
 function Install-Dependencies {
-    $InstallerURL = "$RepoUrl/scripts/deps.ps1"
+    $InstallerURL = "$REPO_URL/scripts/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
     $global:InstallerFiles += $InstallerPath
 
@@ -103,7 +103,7 @@ function Install-Dependencies {
 
 # Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
-    $InstallerURL = "$RepoUrl/scripts/install.ps1"
+    $InstallerURL = "$REPO_URL/scripts/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
     $global:InstallerFiles += $InstallerPath
 

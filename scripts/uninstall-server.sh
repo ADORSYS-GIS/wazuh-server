@@ -12,8 +12,7 @@ fi
 # ==============================================================================
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
-WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
-WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.4'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
