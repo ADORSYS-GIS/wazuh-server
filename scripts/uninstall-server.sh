@@ -12,7 +12,7 @@ fi
 # ==============================================================================
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
-WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.1'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"

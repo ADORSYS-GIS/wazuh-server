@@ -11,7 +11,7 @@ Set-StrictMode -Version Latest
 
 # Variables
 $LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
-$WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.2-rc1" }
+$WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.3" }
 $RepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
 
 # Global array to track uninstaller files
@@ -68,7 +68,7 @@ function Show-Help {
     Write-Host "Examples:" -ForegroundColor Cyan
     Write-Host "  .\uninstall-server.ps1 -Help" -ForegroundColor Cyan
     Write-Host "  `$env:LOG_LEVEL='DEBUG'; .\uninstall-server.ps1" -ForegroundColor Cyan
-    Write-Host "  `$env:WAZUH_SERVER_TAG='0.1.2-rc1'; .\uninstall-server.ps1" -ForegroundColor Cyan
+    Write-Host "  `$env:WAZUH_SERVER_TAG='0.1.3'; .\uninstall-server.ps1" -ForegroundColor Cyan
     Write-Host ""
 }
 
