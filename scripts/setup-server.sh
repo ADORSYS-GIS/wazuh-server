@@ -24,13 +24,15 @@ WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 WOPS_VERSION=${WOPS_VERSION:-'0.2.18'}
 APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
 INSTALL_CERT_OAUTH2="FALSE"
+INSTALL_SURICATA="FALSE"
 
 # Parse command line options
-while getopts ":hc" opt; do
+while getopts ":hcs" opt; do
   case $opt in
     c) INSTALL_CERT_OAUTH2="TRUE"
     ;;
@@ -40,6 +42,7 @@ while getopts ":hc" opt; do
        echo ""
        echo "Options:"
        echo "  -c    Install cert-oauth2 client (optional)"
+       echo "  -s    Install Suricata (optional, IDS mode)"
        echo "  -h    Show this help message"
        echo ""
        echo "Environment Variables:"
@@ -51,9 +54,12 @@ while getopts ":hc" opt; do
        echo "Examples:"
        echo "  $0                    # Core installation only"
        echo "  $0 -c                 # With cert-oauth2"
+       echo "  $0 -s                 # With Suricata (IDS)"
        echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
        echo ""
        exit 0
+    ;;
+    s) INSTALL_SURICATA="TRUE"
     ;;
     \?) echo "Invalid option: -$OPTARG" >&2
         echo "Use -h for help"
@@ -131,7 +137,7 @@ trap cleanup EXIT
 # ==============================================================================
 
 info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2"
+info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA"
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
@@ -168,6 +174,16 @@ if [ "$INSTALL_CERT_OAUTH2" = "TRUE" ]; then
     curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-cert-oauth2.sh"
     if ! (maybe_sudo env LOG_LEVEL="$LOG_LEVEL" OSSEC_CONF_PATH="$OSSEC_CONF_PATH" APP_NAME="$APP_NAME" WOPS_VERSION="$WOPS_VERSION" bash "$TMP_FOLDER/install-cert-oauth2.sh") 2>&1; then
         error_message "Failed to install cert-oauth2"
+        exit 1
+    fi
+fi
+
+# Step 4: Install Suricata if the flag is set (IDS mode)
+if [ "$INSTALL_SURICATA" = "TRUE" ]; then
+    info_message "Installing Suricata (IDS mode)..."
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-suricata.sh"
+    if ! (maybe_sudo bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
+        error_message "Failed to install Suricata"
         exit 1
     fi
 fi
