@@ -14,6 +14,7 @@ LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
@@ -122,7 +123,7 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/main/uninstall.sh > "$TMP_FOLDER/uninstall-trivy.sh"
 fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
-    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 if [ "$UNINSTALL_YARA" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall-server.sh > "$TMP_FOLDER/uninstall-yara-server.sh"
@@ -149,7 +150,7 @@ fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
     if command_exists suricata; then
         print_step 3 "Uninstalling suricata..."
-        if ! (bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
+        if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-suricata.sh") 2>&1; then
             error_message "Failed to uninstall 'suricata'"
             exit 1
         fi

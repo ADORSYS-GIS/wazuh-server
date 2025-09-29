@@ -24,7 +24,7 @@ WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
 WOPS_VERSION=${WOPS_VERSION:-'0.2.18'}
 APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
-WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.4'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
 
 # Installation choice variables
@@ -188,7 +188,7 @@ fi
 # Step 4: Install Suricata if the flag is set (IDS mode)
 if [ "$INSTALL_SURICATA" = "TRUE" ]; then
     info_message "Installing Suricata (IDS mode)..."
-    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/heads/feat/install-prebuilt-binaries/scripts/install.sh" > "$TMP_FOLDER/install-suricata.sh"
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/install.sh" > "$TMP_FOLDER/install-suricata.sh"
     if ! (maybe_sudo bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
         error_message "Failed to install Suricata"
         exit 1
