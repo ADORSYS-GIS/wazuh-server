@@ -13,11 +13,13 @@ fi
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
+WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
 WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
 UNINSTALL_SURICATA="FALSE"
+UNINSTALL_YARA="FALSE"
 
 TMP_FOLDER="$(mktemp -d)"
 
@@ -81,23 +83,26 @@ trap cleanup EXIT
 # CLI Parsing
 # ==============================================================================
 show_help() {
-    echo "Usage: $0 [-s] [-t] [-h]"
+    echo "Usage: $0 [-s] [-t] [-y] [-h]"
     echo ""
     echo "Streamlined Wazuh uninstallation for Linux servers"
     echo ""
     echo "Options:"
     echo "  -s    Uninstall Suricata (optional)"
     echo "  -t    Uninstall Trivy (optional)"
+    echo "  -y    Uninstall Yara (optional)"
     echo "  -h    Show this help message"
     echo ""
     echo "Environment Variables:"
     echo "  WAZUH_SERVER_TAG        Repository tag for server scripts (default: $WAZUH_SERVER_TAG)"
+    echo "  WAZUH_YARA_VERSION      Yara version (default: $WAZUH_YARA_VERSION)"
 }
 
-while getopts ":sth" opt; do
+while getopts ":sthy" opt; do
   case $opt in
     s) UNINSTALL_SURICATA="TRUE" ;;
     t) UNINSTALL_TRIVY="TRUE" ;;
+    y) UNINSTALL_YARA="TRUE" ;;
     h) show_help; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2; show_help; exit 1 ;;
   esac
@@ -108,7 +113,7 @@ done
 # ==============================================================================
 
 info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: UNINSTALL_SURICATA=$UNINSTALL_SURICATA UNINSTALL_TRIVY=$UNINSTALL_TRIVY"
+info_message "Options: UNINSTALL_SURICATA=$UNINSTALL_SURICATA UNINSTALL_TRIVY=$UNINSTALL_TRIVY UNINSTALL_YARA=$UNINSTALL_YARA"
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
@@ -119,6 +124,9 @@ if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
 fi
 if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
+fi
+if [ "$UNINSTALL_YARA" = "TRUE" ]; then
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall-server.sh > "$TMP_FOLDER/uninstall-yara-server.sh"
 fi
 
 
@@ -148,6 +156,19 @@ if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
         fi
     else
         info_message "Suricata not found on system. Skipping."
+    fi
+fi
+
+# Step 4: Uninstall Yara if the flag is set
+if [ "$UNINSTALL_YARA" = "TRUE" ]; then
+    if command_exists yara; then
+        print_step 4 "Uninstalling yara..."
+        if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-yara-server.sh") 2>&1; then
+            error_message "Failed to uninstall 'yara'"
+            exit 1
+        fi
+    else
+        info_message "Yara not found on system. Skipping."
     fi
 fi
 
