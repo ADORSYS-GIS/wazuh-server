@@ -1,3 +1,21 @@
+## [0.1.4]
+
+### Added
+
+- Add support for suricata installation on Windows Server 22, Ubuntu server (22 and 24), rhel >= 9.6, CentOS >= 9 ([#7](https://github.com/ADORSYS-GIS/wazuh-server/pull/7))
+
+### Changed
+
+- None
+
+### Fixed
+
+- None
+
+### Deleted
+
+- None
+
 ## [0.1.3]
 
 ### Added
