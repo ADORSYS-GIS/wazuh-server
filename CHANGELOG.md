@@ -1,3 +1,22 @@
+## [0.1.5]
+
+### Added
+
+- Add support for yara on Windows Server 22, Ubuntu server (22 and 24), rhel >= 9.6, CentOS >= 9, macOS server ([#8](https://github.com/ADORSYS-GIS/wazuh-server/pull/8)
+- Add yara-server.sh active-response script with no notification and auto-remediation of found malware
+
+### Changed
+
+- None
+
+### Fixed
+
+- None
+
+### Deleted
+
+- None
+
 ## [0.1.4]
 
 ### Added
