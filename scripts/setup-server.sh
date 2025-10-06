@@ -34,17 +34,18 @@ INSTALL_SURICATA="FALSE"
 INSTALL_YARA="FALSE"
 
 # Parse command line options
-while getopts ":hcsy" opt; do
+while getopts ":hcsyt" opt; do
   case $opt in
     c) INSTALL_CERT_OAUTH2="TRUE"
     ;;
-    h) echo "Usage: $0 [-c] [-s] [-y] [-h]"
+    h) echo "Usage: $0 [-c] [-s] [-t] [-y] [-h]"
        echo ""
        echo "Streamlined Wazuh Agent installation for Linux servers"
        echo ""
        echo "Options:"
        echo "  -c    Install cert-oauth2 client (optional)"
        echo "  -s    Install Suricata (optional, IDS mode)"
+       echo "  -t    Install Trivy (optional)"
        echo "  -y    Install Yara (optional)"
        echo "  -h    Show this help message"
        echo ""
@@ -58,13 +59,16 @@ while getopts ":hcsy" opt; do
        echo "  $0                    # Core installation only"
        echo "  $0 -c                 # With cert-oauth2"
        echo "  $0 -s                 # With Suricata (IDS)"
+       echo "  $0 -t                 # With Trivy"
        echo "  $0 -y                 # With Yara"
-       echo "  $0 -c -s -y           # With all optional components"
+       echo "  $0 -c -s -t -y        # With all optional components"
        echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
        echo ""
        exit 0
     ;;
     s) INSTALL_SURICATA="TRUE"
+    ;;
+    t) INSTALL_TRIVY="TRUE"
     ;;
     y) INSTALL_YARA="TRUE"
     ;;
@@ -144,7 +148,7 @@ trap cleanup EXIT
 # ==============================================================================
 
 info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA INSTALL_YARA=$INSTALL_YARA"
+info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA INSTALL_TRIVY=$INSTALL_TRIVY INSTALL_YARA=$INSTALL_YARA"
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
