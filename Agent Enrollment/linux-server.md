@@ -20,17 +20,39 @@ This guide walks you through the process of enrolling a Linux system with the Wa
 Download the setup script from the repository and run it to configure the Wazuh agent with the necessary parameters for secure communication with the Wazuh Manager.
 
 ```bash
-curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/setup-agent.sh | WAZUH_MANAGER=master.wazuh.adorsys.team bash
+curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh | WAZUH_MANAGER=your-wazuh-manager.domain bash
 ```
 
-**Remark**: For servers with container engines, you can add **trivy** for vulnerability scanning of container images with this command:
-```bash
-WAZUH_MANAGER="manager.wazuh.adorsys.team" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/setup-agent.sh) -t
-```
+#### Script Configuration Options
 
-**NB:** You have other components that can be installed from this script, to know of them and how to install then run this command
+The setup script supports multiple configuration flags to customize your server installation:
+
+**Available Flags:**
+- `-c`: Install **cert-oauth2 client** for certificate-based authentication (optional)
+- `-s`: Install **Suricata** in IDS mode for network intrusion detection (optional)
+- `-y`: Install **Yara** for malware detection and file analysis (optional)
+- `-h`: Display help message with all options
+
+**Usage Examples:**
+
 ```bash
-WAZUH_MANAGER="manager.wazuh.adorsys.team" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/main/scripts/setup-agent.sh) -h
+# Basic server installation (core components only)
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh)
+
+# Install with cert-oauth2 client
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh) -c
+
+# Install with Suricata (IDS mode)
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh) -s
+
+# Install with Yara for malware detection
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh) -y
+
+# Install with all optional components (cert-oauth2, Suricata, Yara)
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh) -c -s -y
+
+# View all available options
+WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh) -h
 ```
 
 #### Components Installed by the Script:
