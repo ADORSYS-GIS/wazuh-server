@@ -15,8 +15,8 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 When prompted, choose A (Yes to All).
 
-### Step 1: Install the Wazuh Agent 
-Set your manager hostname, download the setup script, and run it. This installs only the core dependencies and the Wazuh Agent.
+### Step 1: Install the Wazuh Agent for Servers
+Set your manager hostname, download the setup script, and run it. This installs only the core dependencies and the Wazuh Agent for servers.
 
 ```powershell
 $env:WAZUH_MANAGER = "your-wazuh-manager.domain"
@@ -72,7 +72,7 @@ Select-String -Path 'C:\Program Files (x86)\ossec-agent\ossec.conf' -Pattern '<s
 ```
 
 ## Uninstallation (when needed)
-Run elevated PowerShell and execute the uninstall wrapper. This delegates to the inner uninstall and removes the agent cleanly.
+Run elevated PowerShell and execute the uninstall wrapper. This delegates to the inner uninstall and removes the agent for servers cleanly.
 ```powershell
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/uninstall-server.ps1' `
   -UseBasicParsing -OutFile "$env:TEMP\uninstall-server.ps1"; `
@@ -80,5 +80,5 @@ PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\uninstall-server.ps1"
 ```
 
 ### Notes
-- The setup installs only: curl, jq, and the Wazuh Agent
+- The setup installs only: curl, jq, and the Wazuh Agent for servers
 - cert-oauth2 client is optional; enrollment requires a browser login to obtain a token 

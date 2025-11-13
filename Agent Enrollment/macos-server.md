@@ -58,9 +58,9 @@ WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https:/
 
 #### Components Installed by the Script:
 
-**1. Wazuh Server:**
+**1. Wazuh Agent for Servers:**
 Monitors your server and sends data to the Wazuh Manager.
-The server is installed and configured to connect to the specified manager (WAZUH_MANAGER).
+The agent for servers is installed and configured to connect to the specified manager (WAZUH_MANAGER).
 
    <img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 09-08-51.png">
 
@@ -119,7 +119,7 @@ After completing the server enrollment, verify that the server is properly conne
 
 #### 1. Check the Server Status:
 
-Check the server service status to confirm that the server is running:
+Check the agent service status to confirm that the agent for servers is running:
 
 ```bash
 sudo launchctl list | grep wazuh
