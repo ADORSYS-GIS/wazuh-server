@@ -6,7 +6,7 @@
 
 ### Changed
 
-- Changed yara-server.sh active-response script. Now won't remove malware when detected, due to potential false positives from yara rules.
+- Changed yara-server.sh active-response script. Now won't remove malware when detected, due to potential false positives from yara rules. [#75](https://github.com/ADORSYS-GIS/wazuh-yara/pull/75)
 
 ### Fixed
 
