@@ -2,7 +2,6 @@
 
 This guide walks you through the process of enrolling a Wazuh agent for servers on a Linux system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent for servers and the Wazuh Manager.
 
-
 ## Prerequisites
 
 - **Administrator Privileges:** Ensure you have sudo access.
@@ -28,6 +27,7 @@ curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-serv
 The setup script supports multiple configuration flags to customize your server installation:
 
 **Available Flags:**
+
 - `-c`: Install **cert-oauth2 client** for certificate-based authentication (optional)
 - `-y`: Install **Yara** for malware detection and file analysis (optional)
 - `-h`: Display help message with all options
@@ -67,7 +67,6 @@ The agent for servers is installed and configured to connect to the specified ma
 
    <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-14-00.png" width="500" height="200">
 
-
 ### Step 2: Enroll Server to Manager
 
 #### 1. Generate the Enrollment URL
@@ -106,7 +105,6 @@ Return to the command line, paste the token, and follow the prompts to complete 
 
 Reboot your device to apply the changes.
 
-
 ### Step 3: Validate the Installation
 
 After completing the agent enrollment, verify that the agent is properly connected and functioning:
@@ -128,11 +126,9 @@ sudo systemctl status wazuh-agent
   sudo ls -l /var/ossec/ruleset/yara/rules
 ```
 
-
 #### 3. Check the Wazuh Manager Dashboard:
 
 Ping an admin for confirmation that the agent appears as "Active" in the Wazuh Manager dashboard.
-
 
 ## Troubleshooting
 
@@ -142,10 +138,9 @@ Ping an admin for confirmation that the agent appears as "Active" in the Wazuh M
 
 - If the agent doesn't show as `Active` in the Wazuh Manager dashboard, check the logs for examination
 
-   ```bash
-   sudo tail -f /var/ossec/logs/ossec.log
-   ```
-  
+  ```bash
+  sudo tail -f /var/ossec/logs/ossec.log
+  ```
 
 ## Uninstall Agent on Server Machine
 
@@ -156,23 +151,23 @@ Ping an admin for confirmation that the agent appears as "Active" in the Wazuh M
   ```bash
   # Uninstall core components only
   curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/uninstall-server.sh | bash
-  
+
   # Uninstall with Yara (if installed)
   curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/uninstall-server.sh | bash -s -- -y
   ```
+
   **NB:** Use the `-y` flag to uninstall Yara if it was installed. The cert-oauth2 client is uninstalled automatically with the core components.
 
 - Reboot the server machine
-  
+
 ### 2. Remove Agent from Wazuh Manager:
 
 Shell into the **master manager node** and use this command to remove agent from wazuh manager's database
 
-  ```bash
-  /var/ossec/bin/manage_agents -r <AGENT_ID>
-  ```
+```bash
+/var/ossec/bin/manage_agents -r <AGENT_ID>
+```
 
- 
 ### Additional Resources
 
-- [Wazuh Documentation](https://documentation.wazuh.com/current/user-manual/server/index.html#wazuh-server)
+- [Wazuh Documentation](https://documentation.wazuh.com/current/user-manual/agent/index.html#wazuh-server)
