@@ -1,3 +1,21 @@
+## [0.1.6]
+
+### Added
+
+- None
+
+### Changed
+
+- Changed yara-server.sh active-response script. Now won't remove malware when detected, due to potential false positives from yara rules.
+
+### Fixed
+
+- None
+
+### Deleted
+
+- None
+
 ## [0.1.5]
 
 ### Added
