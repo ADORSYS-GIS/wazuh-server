@@ -20,7 +20,7 @@ This guide walks you through the process of enrolling a Wazuh agent on a macOS s
 
 ### Step 1: Download and Run the Setup Script
 
-Download the setup script from the repository and run it to configure the Wazuh server with the necessary parameters for secure communication with the Wazuh Manager.
+Download the setup script from the repository and run it to configure the Wazuh Agent for Server with the necessary parameters for secure communication with the Wazuh Manager.
 
 ```bash
 curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh | WAZUH_MANAGER="your-wazuh-manager.domain" bash
