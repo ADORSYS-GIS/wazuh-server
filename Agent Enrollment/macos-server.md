@@ -1,26 +1,31 @@
-# Linux enrollment Guide
+# MacOS Server Enrollment Guide
 
-This guide walks you through the process of enrolling a Linux system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent and the Wazuh Manager.
+This guide walks you through the process of enrolling a MacOS server with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Server and the Wazuh Manager.
 
 
 ## Prerequisites
 
 - **Administrator Privileges:** Ensure you have sudo access.
 
-- **Dependencies**: Have **curl, jq and sed** installed. You can install them with this command
+- **Homebrew**: Have Homebrew be installed
+
+- **Dependencies**: Have **curl, jq and gsed** installed. You can install them with this command
 
   ```
-  sudo apt install -y curl jq sed
+  brew install curl jq gnu-sed
   ```
+
+- **Internet Connectivity:** Verify that the system is connected to the internet.
+
 
 ## Step by step process
 
 ### Step 1: Download and Run the Setup Script
 
-Download the setup script from the repository and run it to configure the Wazuh agent with the necessary parameters for secure communication with the Wazuh Manager.
+Download the setup script from the repository and run it to configure the Wazuh server with the necessary parameters for secure communication with the Wazuh Manager.
 
 ```bash
-curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh | WAZUH_MANAGER=your-wazuh-manager.domain bash
+curl -SL --progress-bar https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/main/scripts/setup-server.sh | WAZUH_MANAGER="your-wazuh-manager.domain" bash
 ```
 
 #### Script Configuration Options
@@ -57,15 +62,17 @@ WAZUH_MANAGER="your-wazuh-manager.domain" bash <(curl -SL --progress-bar https:/
 Monitors your server and sends data to the Wazuh Manager.
 The server is installed and configured to connect to the specified manager (WAZUH_MANAGER).
 
-   <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-11-23.png" width="500" height="200">
+   <img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 09-08-51.png">
 
 **2. OAuth2 Authentication Client:** Adds certificate-based OAuth2 authentication for secure communications.
 
-   <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-12-06.png" width="500" height="200">
+   <img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 09-09-46.png">
+
 
 **3. Yara:** Enables advanced file-based malware detection by integrating Yara rules into Wazuh.
 
-   <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-14-00.png" width="500" height="200">
+   <img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 09-14-15.png">
+
 
 
 ### Step 2: Enroll Server to Manager
@@ -75,12 +82,12 @@ The server is installed and configured to connect to the specified manager (WAZU
 Run the following command to start the enrollment process:
 
 ```bash
-sudo /var/ossec/bin/wazuh-cert-oauth2-client o-auth2
+sudo /Library/Ossec/bin/wazuh-cert-oauth2-client o-auth2
 ```
 
 This command will generate a URL. Copy the link and paste it into your web browser.
 
-   <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-26-25.png" width="500" height="180">
+   <img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 11-14-33.png">
 
 #### 2. Authentication via browser
 
@@ -99,15 +106,14 @@ This command will generate a URL. Copy the link and paste it into your web brows
 #### 3. Complete the Enrollment
 
 Return to the command line, paste the token, and follow the prompts to complete the enrollment process.
-
-   <img src="/Agent Enrollment/images/linux/Screenshot from 2024-12-20 08-30-06.png" width="600" height="250">
+<img src="/Agent Enrollment/images/mac/Screenshot from 2025-01-06 09-16-49.png">
 
 #### 4. Reboot your Device
 
 Reboot your device to apply the changes.
 
 
-### Step 3: Validate the Installation
+### Step 3: Validate Server Installation
 
 After completing the server enrollment, verify that the server is properly connected and functioning:
 
@@ -116,8 +122,9 @@ After completing the server enrollment, verify that the server is properly conne
 Check the server service status to confirm that the server is running:
 
 ```bash
-sudo systemctl status wazuh-agent
+sudo launchctl list | grep wazuh
 ```
+
 
 #### 2. Validate Other Tools Installation
 
@@ -125,7 +132,7 @@ sudo systemctl status wazuh-agent
 
 ```bash
   yara -v
-  sudo ls -l /var/ossec/ruleset/yara/rules
+  sudo ls -l /Library/Ossec/ruleset/yara/rules
 ```
 
 
@@ -143,9 +150,9 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 - If the server doesn't show as `Active` and `Connected` in the Wazuh Manager dashboard, check the logs for examination
 
    ```bash
-   sudo tail -f /var/ossec/logs/ossec.log
+   sudo tail -f /Library/Ossec/logs/ossec.log
    ```
-  
+   
 
 ## Uninstall Server
 
@@ -172,7 +179,6 @@ Shell into the **master manager node** and use this command to remove server fro
   /var/ossec/bin/manage_agents -r <SERVER_ID>
   ```
 
- 
 ### Additional Resources
 
-- [Wazuh Documentation](https://documentation.wazuh.com/current/user-manual/server/index.html#wazuh-server)
+- [Wazuh Documentation](https://documentation.wazuh.com/current/user-manual/agent/index.html#wazuh-agent)
