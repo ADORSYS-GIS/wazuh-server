@@ -1,6 +1,6 @@
 # Linux enrollment Guide
 
-This guide walks you through the process of enrolling a Linux system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent and the Wazuh Manager.
+This guide walks you through the process of enrolling a Wazuh agent for servers on a Linux system with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent for servers and the Wazuh Manager.
 
 
 ## Prerequisites
@@ -111,7 +111,7 @@ Reboot your device to apply the changes.
 
 After completing the agent enrollment, verify that the agent is properly connected and functioning:
 
-#### 1. Check the Server Status:
+#### 1. Check the Agent Status:
 
 Check the agent service status to confirm that the agent for servers is running:
 
@@ -131,7 +131,7 @@ sudo systemctl status wazuh-agent
 
 #### 3. Check the Wazuh Manager Dashboard:
 
-Ping an admin for confirmation that the server appears as "Active" in the Wazuh Manager dashboard.
+Ping an admin for confirmation that the agent appears as "Active" in the Wazuh Manager dashboard.
 
 
 ## Troubleshooting
@@ -140,14 +140,14 @@ Ping an admin for confirmation that the server appears as "Active" in the Wazuh 
 
 - For errors during authentication, ensure Active Directory credentials are correct and two-factor authentication is set up.
 
-- If the server doesn't show as `Active` in the Wazuh Manager dashboard, check the logs for examination
+- If the agent doesn't show as `Active` in the Wazuh Manager dashboard, check the logs for examination
 
    ```bash
    sudo tail -f /var/ossec/logs/ossec.log
    ```
   
 
-## Uninstall Server
+## Uninstall Agent on Server Machine
 
 ### 1. Uninstall Agent on Server Machine:
 

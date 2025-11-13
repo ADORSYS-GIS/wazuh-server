@@ -23,17 +23,17 @@
 
 ## Installation
 
-### Wazuh Server Enrollment Guide
+### Wazuh Agent for Server Enrollment Guide
 
-This guide provides instructions to enroll Wazuh servers on various platforms, integrating them with the Wazuh Manager for enhanced monitoring and security. Additionally, it automates the installation of tools like Yara to augment security capabilities.
+This guide provides instructions to enroll Wazuh agents for servers on various platforms, integrating them with the Wazuh Manager for enhanced monitoring and security. Additionally, it automates the installation of tools like Yara to augment security capabilities.
 
 ### Introduction
 
 Wazuh agents for servers collect and transmit security data from endpoints to the Wazuh Manager for analysis. Proper enrollment ensures seamless integration and secure communication. Refer to the respective guide:
 
-- [Linux Enrollment Guide](/Agent%20Enrollment/linux-server.md)
-- [MacOS Enrollment Guide](/Agent%20Enrollment/macos-server.md)
-- [Windows Enrollment Guide](/Agent%20Enrollment/windows-server.md)
+- [Linux Agent for Server Enrollment Guide](/Agent%20Enrollment/linux-server.md)
+- [MacOS Agent for Server Enrollment Guide](/Agent%20Enrollment/macos-server.md)
+- [Windows Agent for Server Enrollment Guide](/Agent%20Enrollment/windows-server.md)
 
 ## Additional Notes
 

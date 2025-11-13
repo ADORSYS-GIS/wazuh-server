@@ -1,6 +1,6 @@
-# Windows Server Enrollment Guide (Agent + cert-oauth2 only)
+# Wazuh Agent for Server Enrollment Guide - Windows (Agent + cert-oauth2 only)
 
-This guide installs the Wazuh Agent (with minimal dependencies) and enrolls it using cert-oauth2. It is designed for Windows Server endpoints and runs fully unattended except for the browser authentication during enrollment.
+This guide installs the Wazuh Agent for servers (with minimal dependencies) and enrolls it using cert-oauth2. It is designed for Windows Server endpoints and runs fully unattended except for the browser authentication during enrollment.
 
 ### Prerequisites
 
