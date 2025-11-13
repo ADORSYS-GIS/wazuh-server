@@ -1,6 +1,6 @@
 # MacOS Server Enrollment Guide
 
-This guide walks you through the process of enrolling a MacOS server with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Server and the Wazuh Manager.
+This guide walks you through the process of enrolling a Wazuh agent on a MacOS server with the Wazuh Manager. By following these steps, you will install and configure necessary components, ensuring secure communication between the Wazuh Agent for servers and the Wazuh Manager.
 
 
 ## Prerequisites
@@ -138,7 +138,7 @@ sudo launchctl list | grep wazuh
 
 #### 3. Check the Wazuh Manager Dashboard:
 
-Ping an admin for confirmation that the server appears in the Wazuh Manager dashboard.
+Ping an admin for confirmation that the server appears as "Active" in the Wazuh Manager dashboard.
 
 
 ## Troubleshooting
@@ -147,7 +147,7 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 - For errors during authentication, ensure Active Directory credentials are correct and two-factor authentication is set up.
 
-- If the server doesn't show as `Active` and `Connected` in the Wazuh Manager dashboard, check the logs for examination
+- If the server doesn't show as `Active` in the Wazuh Manager dashboard, check the logs for examination
 
    ```bash
    sudo tail -f /Library/Ossec/logs/ossec.log
@@ -156,7 +156,7 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 ## Uninstall Server
 
-### 1. Uninstall on Server Machine:
+### 1. Uninstall Agent on Server Machine:
 
 - Use this command to uninstall
 
@@ -171,12 +171,12 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 - Reboot the server machine
   
-### 2. Remove Server from Wazuh Manager:
+### 2. Remove Agent from Wazuh Manager:
 
-Shell into the **master manager node** and use this command to remove server from wazuh manager's database
+Shell into the **master manager node** and use this command to remove agent from wazuh manager's database
 
   ```bash
-  /var/ossec/bin/manage_agents -r <SERVER_ID>
+  /var/ossec/bin/manage_agents -r <AGENT_ID>
   ```
 
 ### Additional Resources

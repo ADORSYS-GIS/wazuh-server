@@ -109,7 +109,7 @@ Reboot your device to apply the changes.
 
 ### Step 3: Validate the Installation
 
-After completing the server enrollment, verify that the server is properly connected and functioning:
+After completing the agent enrollment, verify that the agent is properly connected and functioning:
 
 #### 1. Check the Server Status:
 
@@ -131,7 +131,7 @@ sudo systemctl status wazuh-agent
 
 #### 3. Check the Wazuh Manager Dashboard:
 
-Ping an admin for confirmation that the server appears in the Wazuh Manager dashboard.
+Ping an admin for confirmation that the server appears as "Active" in the Wazuh Manager dashboard.
 
 
 ## Troubleshooting
@@ -140,7 +140,7 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 - For errors during authentication, ensure Active Directory credentials are correct and two-factor authentication is set up.
 
-- If the server doesn't show as `Active` and `Connected` in the Wazuh Manager dashboard, check the logs for examination
+- If the server doesn't show as `Active` in the Wazuh Manager dashboard, check the logs for examination
 
    ```bash
    sudo tail -f /var/ossec/logs/ossec.log
@@ -149,7 +149,7 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 ## Uninstall Server
 
-### 1. Uninstall on Server Machine:
+### 1. Uninstall Agent on Server Machine:
 
 - Use this command to uninstall
 
@@ -164,12 +164,12 @@ Ping an admin for confirmation that the server appears in the Wazuh Manager dash
 
 - Reboot the server machine
   
-### 2. Remove Server from Wazuh Manager:
+### 2. Remove Agent from Wazuh Manager:
 
-Shell into the **master manager node** and use this command to remove server from wazuh manager's database
+Shell into the **master manager node** and use this command to remove agent from wazuh manager's database
 
   ```bash
-  /var/ossec/bin/manage_agents -r <SERVER_ID>
+  /var/ossec/bin/manage_agents -r <AGENT_ID>
   ```
 
  
