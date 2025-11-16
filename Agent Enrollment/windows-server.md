@@ -19,8 +19,8 @@ When prompted, choose A (Yes to All).
 Set your manager hostname, download the setup script, and run it. This installs only the core dependencies and the Wazuh Agent.
 
 ```powershell
-$env:WAZUH_MANAGER = "single-cluster.dev.wazuh.adorsys.team"
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.3/scripts/setup-server.ps1' `
+$env:WAZUH_MANAGER = "example.wazuh.com"
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.7/scripts/setup-server.ps1' `
   -UseBasicParsing -OutFile "$env:TEMP\setup-server.ps1"; `
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\setup-server.ps1"
 ```
@@ -74,7 +74,7 @@ Select-String -Path 'C:\Program Files (x86)\ossec-agent\ossec.conf' -Pattern '<s
 ## Uninstallation (when needed)
 Run elevated PowerShell and execute the uninstall wrapper. This delegates to the inner uninstall and removes the agent cleanly.
 ```powershell
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.3/scripts/uninstall-server.ps1' `
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v0.1.7/scripts/uninstall-server.ps1' `
   -UseBasicParsing -OutFile "$env:TEMP\uninstall-server.ps1"; `
 PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\uninstall-server.ps1"
 ```
