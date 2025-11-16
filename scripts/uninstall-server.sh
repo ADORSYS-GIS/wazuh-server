@@ -12,7 +12,7 @@ fi
 # ==============================================================================
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
-WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
 WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
 WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 

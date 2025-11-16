@@ -1,3 +1,22 @@
+## [0.1.7]
+
+### Added
+
+- None
+
+### Changed
+
+- Upgraded wazuh-agent version from `v4.12.0-1` -> `v4.13.1-1`
+- Upgraded cert-oauth version from `v0.2.18` -> `v0.3.0`
+
+### Fixed
+
+- None
+
+### Deleted
+
+- None
+
 ## [0.1.6]
 
 ### Added
@@ -35,7 +54,7 @@
 
 - None
 
-## [0.1.4]
+## [0.1.7]
 
 ### Added
 

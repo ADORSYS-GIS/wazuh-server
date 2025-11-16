@@ -20,9 +20,9 @@ fi
 OSSEC_CONF_PATH="$OSSEC_PATH/ossec.conf"
 
 WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
-WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.12.0-1'}
-WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.3'}
-WOPS_VERSION=${WOPS_VERSION:-'0.2.18'}
+WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.13.1-1'}
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
+WOPS_VERSION=${WOPS_VERSION:-'0.3.0'}
 APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
 WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
 WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.14'}
@@ -50,8 +50,8 @@ while getopts ":hcsy" opt; do
        echo ""
        echo "Environment Variables:"
        echo "  WAZUH_MANAGER         Wazuh manager hostname (default: wazuh.example.com)"
-       echo "  WAZUH_AGENT_VERSION   Wazuh agent version (default: 4.12.0-1)"
-       echo "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.3)"
+       echo "  WAZUH_AGENT_VERSION   Wazuh agent version (default: 4.13.1-1)"
+       echo "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.7)"
        echo "  LOG_LEVEL            Logging level (default: INFO)"
        echo ""
        echo "Examples:"
