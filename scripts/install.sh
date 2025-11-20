@@ -169,7 +169,28 @@ installation() {
     if [ $PACKAGE_MANAGER = "yum" ]; then
         $PACKAGE_MANAGER install -y wazuh-agent-"$WAZUH_AGENT_VERSION"
     elif [ $PACKAGE_MANAGER = "apt" ]; then
-        $PACKAGE_MANAGER install -y wazuh-agent="$WAZUH_AGENT_VERSION"
+        CURRENT_VERSION=$(get_installed_version)
+        if [ -n "$CURRENT_VERSION" ] && [ "$CURRENT_VERSION" != "$WAZUH_AGENT_VERSION" ]; then
+            ARCH=$(dpkg --print-architecture)
+            
+            
+            TMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'wazuh_install')
+            info_message "Downloading Wazuh agent version $WAZUH_AGENT_VERSION"
+            if ! wget --show-progress -O "$TMP_DIR/wazuh-agent_${WAZUH_AGENT_VERSION}_${ARCH}.deb" "https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_${WAZUH_AGENT_VERSION}_${ARCH}.deb"; then
+                error_message "Failed to download the specified version. Check version or network."
+                exit 1
+            fi
+            
+            info_message "Installing Wazuh agent ${WAZUH_AGENT_VERSION}..."
+            if ! DEBIAN_FRONTEND=noninteractive dpkg -i --force-confold "$TMP_DIR/wazuh-agent_${WAZUH_AGENT_VERSION}_${ARCH}.deb"; then
+                error_message "Failed to install Wazuh agent."
+                exit 1
+            fi
+            
+            rm -rf "$TMP_DIR"
+        else
+            $PACKAGE_MANAGER install -y wazuh-agent="$WAZUH_AGENT_VERSION"
+        fi
     else
         error_message "Unsupported package manager: $PACKAGE_MANAGER"
         exit 1
