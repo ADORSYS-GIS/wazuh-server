@@ -8,6 +8,7 @@ $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\"
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
 # Variables
 $AgentFileName = "wazuh-agent-$WAZUH_AGENT_VERSION.msi"
+$WazuhServiceName = "WazuhSvc"
 $TempDir = $env:TEMP
 $DownloadUrl = "https://packages.wazuh.com/4.x/windows/wazuh-agent-$WAZUH_AGENT_VERSION.msi"
 $MsiPath = Join-Path -Path $TempDir -ChildPath $AgentFileName
@@ -209,11 +210,11 @@ function Install-Agent {
     InfoMessage "[STEP 7/7] Starting Wazuh service..."
     # Start the Wazuh service
     try {
-        Start-Service -Name "WazuhSvc" -ErrorAction Stop
+        Start-Service -Name $WazuhServiceName -ErrorAction Stop
         
         # Wait a moment and verify service is running
         Start-Sleep -Seconds 3
-        $service = Get-Service -Name "WazuhSvc" -ErrorAction Stop
+        $service = Get-Service -Name $WazuhServiceName -ErrorAction Stop
         
         if ($service.Status -eq 'Running') {
             InfoMessage "Wazuh service started and verified successfully. Status: $($service.Status)"
@@ -234,6 +235,84 @@ function Install-Agent {
 
 
 
+function Validate-Installation {
+    InfoMessage "Validating installation and configuration..."
+    
+    $validationPassed = $true
+    
+    # Check if the Wazuh service is running
+    try {
+        $service = Get-Service -Name $WazuhServiceName -ErrorAction Stop
+        if ($service.Status -eq 'Running') {
+            SuccessMessage "Wazuh agent service is running."
+        } else {
+            ErrorMessage "Wazuh agent service is not running. Current status: $($service.Status)"
+            $validationPassed = $false
+        }
+    } catch {
+        ErrorMessage "Failed to check Wazuh service status: $($_.Exception.Message)"
+        $validationPassed = $false
+    }
+    
+    # Check if the installation directory exists
+    if (Test-Path $OSSEC_PATH) {
+        SuccessMessage "Wazuh installation directory verified: $OSSEC_PATH"
+    } else {
+        ErrorMessage "Wazuh installation directory not found at $OSSEC_PATH"
+        $validationPassed = $false
+    }
+    
+    # Check if the configuration file contains the correct manager address
+    try {
+        if (Test-Path $OSSEC_CONF_PATH) {
+            [xml]$configXml = Get-Content -Path $OSSEC_CONF_PATH -ErrorAction Stop
+            $configuredManager = $configXml.ossec_config.client.server.address
+            
+            if ($configuredManager -eq $WAZUH_MANAGER) {
+                SuccessMessage "Wazuh manager address is configured correctly: $WAZUH_MANAGER"
+            } else {
+                WarnMessage "Wazuh manager address mismatch. Expected: $WAZUH_MANAGER, Found: $configuredManager"
+            }
+        } else {
+            ErrorMessage "Configuration file not found at $OSSEC_CONF_PATH"
+            $validationPassed = $false
+        }
+    } catch {
+        ErrorMessage "Failed to validate manager address: $($_.Exception.Message)"
+        $validationPassed = $false
+    }
+    
+    # Check if active response monitoring is configured
+    try {
+        [xml]$configXml = Get-Content -Path $OSSEC_CONF_PATH -ErrorAction Stop
+        $activeResponseExists = $false
+        
+        foreach ($localfile in $configXml.ossec_config.localfile) {
+            if ($localfile.location -like "*active-responses.log") {
+                $activeResponseExists = $true
+                break
+            }
+        }
+        
+        if ($activeResponseExists) {
+            SuccessMessage "Active response monitoring is configured."
+        } else {
+            WarnMessage "Active response monitoring is not configured."
+        }
+    } catch {
+        WarnMessage "Failed to validate active response monitoring: $($_.Exception.Message)"
+    }
+    
+    if ($validationPassed) {
+        SuccessMessage "Installation and configuration validated successfully."
+    } else {
+        ErrorMessage "Installation validation completed with warnings or errors. Please review the output above."
+    }
+    
+    return $validationPassed
+}
+
+
 function Remove-InstallerFiles {
     InfoMessage "Cleaning up installer files..."
     try {
@@ -251,11 +330,6 @@ function Remove-InstallerFiles {
     }
 }
 
-
-# Main execution with proper error handling and exit codes
-$overallSuccess = $true
-
-
 InfoMessage "Starting Wazuh agent installation process..."
 InfoMessage "Target Manager: $WAZUH_MANAGER"
 InfoMessage "Agent Version: $WAZUH_AGENT_VERSION"
@@ -267,11 +341,17 @@ try {
     InfoMessage "Installing Wazuh agent..."
     if (-not (Install-Agent)) {
         ErrorMessage "Wazuh agent installation failed."
-        $overallSuccess = $false
     }
     
     InfoMessage "=" * 60
     
+    # Validate installation
+    if (-not (Validate-Installation)) {
+        ErrorMessage "Installation validation completed with issues. Please review the output above."
+        exit 1
+    }
+    
+    InfoMessage "=" * 60
     
 } finally {
     InfoMessage "=" * 60
@@ -279,16 +359,4 @@ try {
     # Always attempt cleanup
     InfoMessage "Performing cleanup..."
     Remove-InstallerFiles | Out-Null
-}
-
-
-# Final status and exit
-if ($overallSuccess) {
-    SuccessMessage "Wazuh agent installation completed successfully!"
-    InfoMessage "Agent is configured to connect to: $WAZUH_MANAGER"
-    InfoMessage "Service status: $((Get-Service -Name 'WazuhSvc' -ErrorAction SilentlyContinue).Status)"
-    exit 0
-} else {
-    ErrorMessage "Wazuh agent installation failed. Please check the logs above for details."
-    exit 1
 }
