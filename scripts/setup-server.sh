@@ -25,7 +25,7 @@ WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
 WOPS_VERSION=${WOPS_VERSION:-'0.3.0'}
 APP_NAME=${APP_NAME:-'wazuh-cert-oauth2-client'}
 WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
-WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.14'}
+WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.4.0-rc.1'}
 
 # Installation choice variables
 INSTALL_TRIVY="FALSE"
@@ -198,11 +198,7 @@ fi
 # Step 5: Install Yara if the flag is set
 if [ "$INSTALL_YARA" = "TRUE" ]; then
     info_message "Installing Yara..."
-    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install-server.sh" > "$TMP_FOLDER/install-yara-server.sh"
-    if ! (maybe_sudo env LOG_LEVEL="$LOG_LEVEL" OSSEC_CONF_PATH="$OSSEC_CONF_PATH" WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
-        error_message "Failed to install Yara"
-        exit 1
-    fi
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.sh" | INSTALLATION_TYPE=server maybe_sudo bash
 fi
 
 # Step 6: Download version file
