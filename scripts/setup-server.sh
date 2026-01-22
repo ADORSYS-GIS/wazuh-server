@@ -198,7 +198,7 @@ fi
 # Step 5: Install Yara if the flag is set
 if [ "$INSTALL_YARA" = "TRUE" ]; then
     info_message "Installing Yara..."
-    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.sh" | INSTALLATION_TYPE=server maybe_sudo bash
+    curl -SL -s "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/install.sh" | maybe_sudo env INSTALLATION_TYPE=server bash
 fi
 
 # Step 6: Download version file
