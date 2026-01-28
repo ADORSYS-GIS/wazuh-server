@@ -13,8 +13,8 @@ fi
 LOG_LEVEL=${LOG_LEVEL:-"INFO"}
 
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
-WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.3.12'}
-WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.1.5'}
+WAZUH_YARA_VERSION=${WAZUH_YARA_VERSION:-'0.4.0-rc.3'}
+WAZUH_SURICATA_VERSION=${WAZUH_SURICATA_VERSION:-'0.2.0-rc.3'}
 
 # Uninstall choice variables
 UNINSTALL_TRIVY="FALSE"
@@ -126,7 +126,7 @@ if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
     curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-suricata.sh"
 fi
 if [ "$UNINSTALL_YARA" = "TRUE" ]; then
-    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall-server.sh > "$TMP_FOLDER/uninstall-yara-server.sh"
+    curl -SL -s https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/refs/tags/v$WAZUH_YARA_VERSION/scripts/uninstall.sh > "$TMP_FOLDER/uninstall-yara-server.sh"
 fi
 
 
