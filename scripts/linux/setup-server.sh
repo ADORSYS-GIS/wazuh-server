@@ -192,8 +192,8 @@ fi
 # Install Yara if the flag is set
 if [ "$INSTALL_YARA" = "TRUE" ]; then
     info_message "Downloading Yara installation script..."
-    download_and_verify_file "$WAZUH_YARA_REPO_URL/scripts/linux/install-server.sh" "$TMP_FOLDER/install-yara-server.sh" "scripts/install-server.sh" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
-    if ! (maybe_sudo env WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
+    download_and_verify_file "$WAZUH_YARA_REPO_URL/scripts/linux/install.sh" "$TMP_FOLDER/install-yara-server.sh" "scripts/linux/install.sh" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env INSTALLATION_TYPE="server" WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
         error_message "Failed to install Yara"
         exit 1
     fi
