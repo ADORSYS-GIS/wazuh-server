@@ -13,66 +13,63 @@ param(
 # Set strict mode for script execution
 Set-StrictMode -Version Latest
 
-# Variables (default log level, paths)
-$LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
+# Variables
 $WAZUH_MANAGER = if ($env:WAZUH_MANAGER) { $env:WAZUH_MANAGER } else { "wazuh.example.com" }
-$WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.13.1-1" }
+$WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.14.2-1" }
 $WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.7" }
 $WAZUH_SURICATA_VERSION = if ($env:WAZUH_SURICATA_VERSION) { $env:WAZUH_SURICATA_VERSION } else { "0.1.5" }
-$WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.3.0" }
+$WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.4.2" }
 $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-client" }
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
-$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION"
+
+$WAZUH_SERVER_REPO_REF = if ($env:WAZUH_SERVER_REPO_REF) { $env:WAZUH_SERVER_REPO_REF } else { "refs/tags/v$WAZUH_SERVER_TAG" }
+$WAZUH_CERT_OAUTH2_REPO_REF = if ($env:WAZUH_CERT_OAUTH2_REPO_REF) { $env:WAZUH_CERT_OAUTH2_REPO_REF } else { "refs/tags/v$WOPS_VERSION" }
+$WAZUH_SURICATA_REPO_REF = if ($env:WAZUH_SURICATA_REPO_REF) { $env:WAZUH_SURICATA_REPO_REF } else { "refs/tags/v$WAZUH_SURICATA_VERSION" }
+
+$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
 $VERSION_FILE_URL = "$REPO_URL/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
+# Create a secure temporary directory for utilities
+$UtilsTmp = Join-Path $env:TEMP "wazuh-utils-$(Get-Random)"
+New-Item -ItemType Directory -Path $UtilsTmp -Force | Out-Null
+
+# Source shared utilities
+try {
+    $ChecksumsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/checksums.sha256"
+    $UtilsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/scripts/shared/utils.ps1"
+
+    $global:ChecksumsPath = Join-Path $UtilsTmp "checksums.sha256"
+    $UtilsPath = Join-Path $UtilsTmp "utils.ps1"
+
+    Invoke-WebRequest -Uri $ChecksumsURL -OutFile $ChecksumsPath -ErrorAction Stop
+    Invoke-WebRequest -Uri $UtilsURL -OutFile $UtilsPath -ErrorAction Stop
+
+    # Verification function (bootstrap)
+    function Get-FileChecksum-Bootstrap {
+        param([string]$FilePath)
+        return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLower()
+    }
+
+    $ExpectedHash = (Select-String -Path $ChecksumsPath -Pattern "scripts/shared/utils.ps1").Line.Split(" ")[0]
+    $ActualHash = Get-FileChecksum-Bootstrap -FilePath $UtilsPath
+
+    if ([string]::IsNullOrWhiteSpace($ExpectedHash) -or ($ActualHash -ne $ExpectedHash.ToLower())) {
+        Write-Error "Checksum verification failed for utils.ps1"
+        exit 1
+    }
+
+    . $UtilsPath
+}
+catch {
+    Write-Error "Failed to initialize utilities: $($_.Exception.Message)"
+    exit 1
+}
+
 # Global array to track installer files
 $global:InstallerFiles = @()
-
-# Function to log messages with a timestamp
-function Log {
-    param (
-        [string]$Level,
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
-}
-
-function InfoMessage {
-    param ([string]$Message)
-    Log "[INFO]" $Message "Cyan"
-}
-
-function WarningMessage {
-    param ([string]$Message)
-    Log "[WARNING]" $Message "Yellow"
-}
-
-function SuccessMessage {
-    param ([string]$Message)
-    Log "[SUCCESS]" $Message "Green"
-}
-
-function ErrorMessage {
-    param ([string]$Message)
-    Log "[ERROR]" $Message "Red"
-}
-
-function SectionSeparator {
-    param (
-        [string]$SectionName
-    )
-    Write-Host ""
-    Write-Host "==================================================" -ForegroundColor Magenta
-    Write-Host "  $SectionName" -ForegroundColor Magenta
-    Write-Host "==================================================" -ForegroundColor Magenta
-    Write-Host ""
-}
-
 # Cleanup function to remove installer files at the end
 function Remove-InstallerFiles {
     foreach ($file in $global:InstallerFiles) {

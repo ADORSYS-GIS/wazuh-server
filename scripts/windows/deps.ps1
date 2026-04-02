@@ -1,50 +1,42 @@
 # PowerShell script to install dependencies for Wazuh on Windows
 # This script installs Visual C++ Redistributable, GNU sed, curl, and jq
 
-# Function to log messages with a timestamp
-function Log {
-    param (
-        [string]$Level,
-        [string]$Message,
-        [string]$Color = "White"  # Default color
-    )
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
-}
+# Source shared utilities
+if (-not $env:WAZUH_SERVER_REPO_REF) { $env:WAZUH_SERVER_REPO_REF = "0.1.7" }
+$WAZUH_SERVER_REPO_REF = $env:WAZUH_SERVER_REPO_REF
 
-# Logging helpers with colors
-function InfoMessage {
-    param ([string]$Message)
-    Log "[INFO]" $Message "White"
-}
+# Create a secure temporary directory for utilities
+$UtilsTmp = Join-Path $env:TEMP "wazuh-utils-$(Get-Random)"
+New-Item -ItemType Directory -Path $UtilsTmp -Force | Out-Null
 
-function WarnMessage {
-    param ([string]$Message)
-    Log "[WARNING]" $Message "Yellow"
-}
+try {
+    $ChecksumsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/checksums.sha256"
+    $UtilsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/scripts/shared/utils.ps1"
+    
+    $global:ChecksumsPath = Join-Path $UtilsTmp "checksums.sha256"
+    $UtilsPath = Join-Path $UtilsTmp "utils.ps1"
 
-function ErrorMessage {
-    param ([string]$Message)
-    Log "[ERROR]" $Message "Red"
-}
+    Invoke-WebRequest -Uri $ChecksumsURL -OutFile $ChecksumsPath -ErrorAction Stop
+    Invoke-WebRequest -Uri $UtilsURL -OutFile $UtilsPath -ErrorAction Stop
 
-function SuccessMessage {
-    param ([string]$Message)
-    Log "[SUCCESS]" $Message "Green"
-}
+    # Verification function (bootstrap)
+    function Get-FileChecksum-Bootstrap {
+        param([string]$FilePath)
+        return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLower()
+    }
 
-function PrintStep {
-    param (
-        [int]$StepNumber,
-        [string]$Message
-    )
-    Log "[STEP]" "Step ${StepNumber}: $Message" "White"
-}
+    $ExpectedHash = (Select-String -Path $ChecksumsPath -Pattern "scripts/shared/utils.ps1").Line.Split(" ")[0]
+    $ActualHash = Get-FileChecksum-Bootstrap -FilePath $UtilsPath
 
-# Exit script with an error message
-function ErrorExit {
-    param ([string]$Message)
-    ErrorMessage $Message
+    if ([string]::IsNullOrWhiteSpace($ExpectedHash) -or ($ActualHash -ne $ExpectedHash.ToLower())) {
+        Write-Error "Checksum verification failed for utils.ps1"
+        exit 1
+    }
+
+    . $UtilsPath
+}
+catch {
+    Write-Error "Failed to initialize utilities: $($_.Exception.Message)"
     exit 1
 }
 
