@@ -162,7 +162,7 @@ fi
 # Install Trivy if the flag is set
 if [ "$INSTALL_TRIVY" = "TRUE" ]; then
     info_message "Downloading Trivy installation script..."
-    download_and_verify_file "$WAZUH_TRIVY_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-trivy.sh" "scripts/install.sh" "trivy install script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
+    download_and_verify_file "$WAZUH_TRIVY_REPO_URL/scripts/linux/install.sh" "$TMP_FOLDER/install-trivy.sh" "scripts/linux/install.sh" "trivy install script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
     if ! (maybe_sudo env WAZUH_TRIVY_REPO_REF="$WAZUH_TRIVY_REPO_REF" bash "$TMP_FOLDER/install-trivy.sh") 2>&1; then
         error_message "Failed to install trivy"
         exit 1
@@ -172,7 +172,7 @@ fi
 # Install cert-oauth2 if the flag is set
 if [ "$INSTALL_CERT_OAUTH2" = "TRUE" ]; then
     info_message "Downloading cert-oauth2 installation script..."
-    download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-cert-oauth2.sh" "scripts/install.sh" "cert-oauth2 install script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
+    download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/scripts/linux/install.sh" "$TMP_FOLDER/install-cert-oauth2.sh" "scripts/linux/install.sh" "cert-oauth2 install script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
     if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" APP_NAME="$APP_NAME" WOPS_VERSION="$WOPS_VERSION" bash "$TMP_FOLDER/install-cert-oauth2.sh") 2>&1; then
         error_message "Failed to install cert-oauth2"
         exit 1
@@ -182,7 +182,7 @@ fi
 # Install Suricata if the flag is set
 if [ "$INSTALL_SURICATA" = "TRUE" ]; then
     info_message "Downloading Suricata installation script..."
-    download_and_verify_file "$WAZUH_SURICATA_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-suricata.sh" "scripts/install.sh" "suricata install script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
+    download_and_verify_file "$WAZUH_SURICATA_REPO_URL/scripts/linux/install.sh" "$TMP_FOLDER/install-suricata.sh" "scripts/linux/install.sh" "suricata install script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
     if ! (maybe_sudo env WAZUH_SURICATA_VERSION="$WAZUH_SURICATA_VERSION" bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
         error_message "Failed to install Suricata"
         exit 1
@@ -192,7 +192,7 @@ fi
 # Install Yara if the flag is set
 if [ "$INSTALL_YARA" = "TRUE" ]; then
     info_message "Downloading Yara installation script..."
-    download_and_verify_file "$WAZUH_YARA_REPO_URL/scripts/install-server.sh" "$TMP_FOLDER/install-yara-server.sh" "scripts/install-server.sh" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
+    download_and_verify_file "$WAZUH_YARA_REPO_URL/scripts/linux/install-server.sh" "$TMP_FOLDER/install-yara-server.sh" "scripts/install-server.sh" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
     if ! (maybe_sudo env WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
         error_message "Failed to install Yara"
         exit 1

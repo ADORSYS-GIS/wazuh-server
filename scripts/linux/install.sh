@@ -53,7 +53,6 @@ WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
 WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.14.2-1'}
 OSSEC_CONF_PATH="/var/ossec/etc/ossec.conf"
 OSSEC_LOG_PATH="/var/ossec/logs"
-LOGO_PATH="/usr/share/pixmaps"
 WAZUH_CONTROL_PATH="/var/ossec/bin/wazuh-control"
 
 ## WAZUH_MANAGER is required
@@ -255,19 +254,6 @@ config() {
             else
                 info_message "active-response logs already being monitored in $OSSEC_CONF_PATH"
             fi
-
-    # Download logo
-    if [ ! -d "$LOGO_PATH" ]; then
-        info_message "Creating $LOGO_PATH directory..."
-        mkdir -p "$LOGO_PATH"
-        info_message "Directory created successfully."
-    else
-        info_message "$LOGO_PATH directory already exists."
-    fi
-    info_message "Downloading logo..."
-    download_and_verify_file "$REPO_URL/assets/wazuh-logo.png" "$LOGO_PATH/wazuh-logo.png" "assets/wazuh-logo.png" "logo" "$REPO_URL/checksums.sha256"
-    maybe_sudo chmod +r "$LOGO_PATH/wazuh-logo.png"
-    info_message "Logo downloaded successfully."
 }
 
 start_agent() {
@@ -322,12 +308,6 @@ validate_installation() {
         warn_message "Active response logs are not configured correctly in $OSSEC_CONF_PATH."
     fi
     info_message "active-response logs are configured to be monitored."
-
-    # Check if the logo file exists
-    if maybe_sudo [ ! -f "$LOGO_PATH/wazuh-logo.png" ]; then
-        warn_message "Logo file has not been downloaded."
-    fi
-    info_message "Logo file exists at $LOGO_PATH/wazuh-logo.png."
 
   success_message "Installation and configuration validated successfully."
 }
