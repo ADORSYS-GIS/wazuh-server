@@ -178,7 +178,6 @@ download_and_verify_file() {
     # If a direct checksum URL is provided, download it and use it as the source of truth
     if [ -n "$checksum_url" ]; then
         local temp_checksum_file
-        checksum_
         temp_checksum_file=$(mktemp)
         if ! download_file "$checksum_url" "$temp_checksum_file"; then
             error_exit "Failed to download external checksum file from $checksum_url"
