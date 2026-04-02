@@ -44,7 +44,7 @@ TMP_FOLDER=$(mktemp -d)
 
 # Download utils.sh from repository
 trap 'rm -rf "$TMP_FOLDER"' EXIT
-if ! curl "$REPO_URL/scripts/shared/utils.sh" -o "$TMP_FOLDER/utils.sh"; then
+if ! curl "$WAZUH_SERVER_REPO_URL/scripts/shared/utils.sh" -o "$TMP_FOLDER/utils.sh"; then
     echo "Failed to download utils.sh"
     exit 1
 fi
@@ -59,7 +59,7 @@ calculate_sha256_bootstrap() {
 }
 
 # Download checksums and verify utils.sh integrity BEFORE sourcing it
-if ! curl "$REPO_URL/checksums.sha256" -o "$TMP_FOLDER/checksums.sha256"; then
+if ! curl "$WAZUH_SERVER_REPO_URL/checksums.sha256" -o "$TMP_FOLDER/checksums.sha256"; then
     echo "Failed to download checksums.sha256"
     exit 1
 fi

@@ -27,9 +27,9 @@ $WAZUH_SERVER_REPO_REF = if ($env:WAZUH_SERVER_REPO_REF) { $env:WAZUH_SERVER_REP
 $WAZUH_CERT_OAUTH2_REPO_REF = if ($env:WAZUH_CERT_OAUTH2_REPO_REF) { $env:WAZUH_CERT_OAUTH2_REPO_REF } else { "refs/tags/v$WOPS_VERSION" }
 $WAZUH_SURICATA_REPO_REF = if ($env:WAZUH_SURICATA_REPO_REF) { $env:WAZUH_SURICATA_REPO_REF } else { "refs/tags/v$WAZUH_SURICATA_VERSION" }
 
-$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+$WAZUH_SERVER_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
 $SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
-$VERSION_FILE_URL = "$REPO_URL/version.txt"
+$VERSION_FILE_URL = "$WAZUH_SERVER_REPO_URL/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
 # Create a secure temporary directory for utilities
@@ -82,7 +82,7 @@ function Remove-InstallerFiles {
 
 # Step 1: Download dependency script and execute
 function Install-Dependencies {
-    $InstallerURL = "$REPO_URL/scripts/windows/deps.ps1"
+    $InstallerURL = "$WAZUH_SERVER_REPO_URL/scripts/windows/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
     $global:InstallerFiles += $InstallerPath
 
@@ -100,7 +100,7 @@ function Install-Dependencies {
 
 # Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
-    $InstallerURL = "$REPO_URL/scripts/windows/install.ps1"
+    $InstallerURL = "$WAZUH_SERVER_REPO_URL/scripts/windows/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
     $global:InstallerFiles += $InstallerPath
 
