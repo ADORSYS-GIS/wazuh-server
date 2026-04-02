@@ -82,14 +82,13 @@ function Remove-InstallerFiles {
 
 # Step 1: Download dependency script and execute
 function Install-Dependencies {
-    $InstallerURL = "$REPO_URL/scripts/deps.ps1"
+    $InstallerURL = "$REPO_URL/scripts/windows/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing dependency script..."
-        Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
-        InfoMessage "Dependency script downloaded successfully."
+        Download-And-VerifyFile -Url $InstallerURL -Destination $InstallerPath -ChecksumPattern "scripts/windows/deps.ps1" -FileName "deps.ps1"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Dependencies installed successfully"
     }
@@ -101,14 +100,13 @@ function Install-Dependencies {
 
 # Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
-    $InstallerURL = "$REPO_URL/scripts/install.ps1"
+    $InstallerURL = "$REPO_URL/scripts/windows/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing Wazuh agent script..."
-        Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
-        InfoMessage "Wazuh agent script downloaded successfully."
+        Download-And-VerifyFile -Url $InstallerURL -Destination $InstallerPath -ChecksumPattern "scripts/windows/install.ps1" -FileName "install.ps1"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Wazuh agent installed successfully"
     }
@@ -119,14 +117,13 @@ function Install-WazuhAgent {
 }
 
 function Install-OAuth2Client {
-    $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.ps1"
+    $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF/scripts/windows/install.ps1"
     $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
     $global:InstallerFiles += $OAuth2Script
 
     try {
         InfoMessage "Downloading and executing wazuh-cert-oauth2-client script..."
-        Invoke-WebRequest -Uri $OAuth2Url -OutFile $OAuth2Script -ErrorAction Stop
-        InfoMessage "wazuh-cert-oauth2-client script downloaded successfully."
+        Download-And-VerifyFile -Url $OAuth2Url -Destination $OAuth2Script -ChecksumPattern "scripts/windows/install.ps1" -FileName "wazuh-cert-oauth2-client-install.ps1"
         & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ErrorAction Stop
     }
     catch {
@@ -135,14 +132,13 @@ function Install-OAuth2Client {
 }
 
 function Install-SuricataClient {
-    $SuricataUrl = "$SuricataRepoUrl/scripts/install-suricata-silent.ps1"
+    $SuricataUrl = "$SuricataRepoUrl/scripts/windows/install-suricata-silent.ps1"
     $SuricataScript = "$env:TEMP\install-suricata-silent.ps1"
     $global:InstallerFiles += $SuricataScript
 
     try {
         InfoMessage "Downloading and executing silent Suricata installation script..."
-        Invoke-WebRequest -Uri $SuricataUrl -OutFile $SuricataScript -ErrorAction Stop
-        InfoMessage "Silent Suricata script downloaded successfully."
+        Download-And-VerifyFile -Url $SuricataUrl -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1"
         & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
         SuccessMessage "Suricata installed successfully with automated silent installation"
     }
@@ -159,7 +155,7 @@ function DownloadVersionFile {
     }
     else {
         try {
-            Invoke-WebRequest -Uri $VERSION_FILE_URL -OutFile $VERSION_FILE_PATH -ErrorAction Stop
+            Download-And-VerifyFile -Url $VERSION_FILE_URL -Destination $VERSION_FILE_PATH -ChecksumPattern "version.txt" -FileName "version.txt"
             SuccessMessage "Version file downloaded successfully"
         } catch {
             ErrorMessage "Failed to download version file: $($_.Exception.Message)"

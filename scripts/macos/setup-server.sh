@@ -136,59 +136,68 @@ info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."
-for script in "deps.sh" "install.sh"; do
-    pattern="scripts/macos/$script"
-    download_and_verify_file "$WAZUH_SERVER_REPO_URL/$pattern" "$TMP_FOLDER/$script" "$pattern" $script "$WAZUH_SERVER_REPO_URL/checksums.sha256"
-done
+
+# Download and verify deps.sh
+download_and_verify_file "$WAZUH_SERVER_REPO_URL/scripts/macos/deps.sh" "$TMP_FOLDER/deps.sh" "scripts/macos/deps.sh" "deps.sh" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
+
+# Download and verify install.sh
+download_and_verify_file "$WAZUH_SERVER_REPO_URL/scripts/macos/install.sh" "$TMP_FOLDER/install.sh" "scripts/macos/install.sh" "install.sh" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
 
 # Step 0: Install dependencies
 info_message "Installing dependencies"
-if ! (maybe_sudo env WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" bash "$TMP_FOLDER/install-deps.sh") 2>&1; then
+if ! (maybe_sudo env WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" bash "$TMP_FOLDER/deps.sh") 2>&1; then
     error_message "Failed to install dependencies"
     exit 1
 fi
 
 # Step 1: Download and install Wazuh agent
 info_message "Installing Wazuh agent"
-if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" WAZUH_MANAGER="$WAZUH_MANAGER" WAZUH_AGENT_VERSION="$WAZUH_AGENT_VERSION" WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" bash "$TMP_FOLDER/install-wazuh-server.sh") 2>&1; then
+if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" WAZUH_MANAGER="$WAZUH_MANAGER" WAZUH_AGENT_VERSION="$WAZUH_AGENT_VERSION" WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" bash "$TMP_FOLDER/install.sh") 2>&1; then
     error_message "Failed to install wazuh-server"
     exit 1
 fi
 
 # Step 2: Install components if the flag is set
-macos_install_pattern="scripts/macos/install.sh"
-for component in "trivy" "cert-oauth2" "suricata" "yara"; do
-    INSTALL_VAR="INSTALL_$(echo "$component" | tr '[:lower:]' '[:upper:]')"
-    if [ "${!INSTALL_VAR}" = "TRUE" ]; then
-        info_message "Downloading $component installation script..."
-        case "$component" in
-            "trivy")
-                download_and_verify_file "$WAZUH_TRIVY_REPO_URL/$macos_install_pattern" "$TMP_FOLDER/install-trivy.sh" "$macos_install_pattern" "trivy install script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env WAZUH_TRIVY_REPO_REF="$WAZUH_TRIVY_REPO_REF" bash "$TMP_FOLDER/install-trivy.sh") 2>&1; then
-                    error_exit "Failed to install trivy"
-                fi
-                ;;
-            "cert-oauth2")
-                download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/$macos_install_pattern" "$TMP_FOLDER/install-cert-oauth2.sh" "$macos_install_pattern" "cert-oauth2 install script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" APP_NAME="$APP_NAME" WOPS_VERSION="$WOPS_VERSION" bash "$TMP_FOLDER/install-cert-oauth2.sh") 2>&1; then
-                    error_exit "Failed to install cert-oauth2"
-                fi
-                ;;
-            "suricata")
-                download_and_verify_file "$WAZUH_SURICATA_REPO_URL/$macos_install_pattern" "$TMP_FOLDER/install-suricata.sh" "$macos_install_pattern" "suricata install script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env WAZUH_SURICATA_VERSION="$WAZUH_SURICATA_VERSION" bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
-                    error_exit "Failed to install Suricata"
-                fi
-                ;;
-            "yara")
-                download_and_verify_file "$WAZUH_YARA_REPO_URL/$macos_install_pattern" "$TMP_FOLDER/install-yara-server.sh" "$macos_install_pattern" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
-                    error_exit "Failed to install Yara"
-                fi
-                ;;
-        esac
+
+# Install Trivy if the flag is set
+if [ "$INSTALL_TRIVY" = "TRUE" ]; then
+    info_message "Downloading Trivy installation script..."
+    download_and_verify_file "$WAZUH_TRIVY_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-trivy.sh" "scripts/install.sh" "trivy install script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env WAZUH_TRIVY_REPO_REF="$WAZUH_TRIVY_REPO_REF" bash "$TMP_FOLDER/install-trivy.sh") 2>&1; then
+        error_message "Failed to install trivy"
+        exit 1
     fi
-done
+fi
+
+# Install cert-oauth2 if the flag is set
+if [ "$INSTALL_CERT_OAUTH2" = "TRUE" ]; then
+    info_message "Downloading cert-oauth2 installation script..."
+    download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-cert-oauth2.sh" "scripts/install.sh" "cert-oauth2 install script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" APP_NAME="$APP_NAME" WOPS_VERSION="$WOPS_VERSION" bash "$TMP_FOLDER/install-cert-oauth2.sh") 2>&1; then
+        error_message "Failed to install cert-oauth2"
+        exit 1
+    fi
+fi
+
+# Install Suricata if the flag is set
+if [ "$INSTALL_SURICATA" = "TRUE" ]; then
+    info_message "Downloading Suricata installation script..."
+    download_and_verify_file "$WAZUH_SURICATA_REPO_URL/scripts/install.sh" "$TMP_FOLDER/install-suricata.sh" "scripts/install.sh" "suricata install script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env WAZUH_SURICATA_VERSION="$WAZUH_SURICATA_VERSION" bash "$TMP_FOLDER/install-suricata.sh" --mode ids) 2>&1; then
+        error_message "Failed to install Suricata"
+        exit 1
+    fi
+fi
+
+# Install Yara if the flag is set
+if [ "$INSTALL_YARA" = "TRUE" ]; then
+    info_message "Downloading Yara installation script..."
+    download_and_verify_file "$WAZUH_YARA_REPO_URL/scripts/install-server.sh" "$TMP_FOLDER/install-yara-server.sh" "scripts/install-server.sh" "yara install script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" bash "$TMP_FOLDER/install-yara-server.sh") 2>&1; then
+        error_message "Failed to install Yara"
+        exit 1
+    fi
+fi
 
 # Step 6: Download version file
 info_message "Downloading version file..."

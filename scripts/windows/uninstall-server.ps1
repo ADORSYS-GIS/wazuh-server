@@ -101,7 +101,7 @@ if ($Help) {
 
 # Function to uninstall Suricata using automated script
 function Uninstall-SuricataClient {
-    $UninstallerURL = "$SuricataRepoUrl/scripts/uninstall-automated.ps1"
+    $UninstallerURL = "$SuricataRepoUrl/scripts/windows/uninstall-automated.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-suricata-automated.ps1"
     $global:UninstallerFiles += $UninstallerPath
 
@@ -109,7 +109,7 @@ function Uninstall-SuricataClient {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             InfoMessage "Downloading automated Suricata uninstall script (attempt $attempt of $maxAttempts)..."
-            Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+            Download-And-VerifyFile -Url $UninstallerURL -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall-automated.ps1" -FileName "uninstall-suricata-automated.ps1"
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }
@@ -130,7 +130,7 @@ function Uninstall-SuricataClient {
 
 # Function to uninstall Wazuh Agent by delegating to inner script
 function Uninstall-WazuhAgent {
-    $UninstallerURL = "$REPO_URL/scripts/uninstall.ps1"
+    $UninstallerURL = "$REPO_URL/scripts/windows/uninstall.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-wazuh-agent.ps1"
     $global:UninstallerFiles += $UninstallerPath
 
@@ -138,7 +138,7 @@ function Uninstall-WazuhAgent {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             InfoMessage "Downloading Wazuh agent uninstall script (attempt $attempt of $maxAttempts)..."
-            Invoke-WebRequest -Uri $UninstallerURL -OutFile $UninstallerPath -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+            Download-And-VerifyFile -Url $UninstallerURL -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall.ps1" -FileName "uninstall-wazuh-agent.ps1"
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }
