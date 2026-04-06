@@ -11,6 +11,7 @@ WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
 WAZUH_USER=${WAZUH_USER:-'wazuh'}
 WAZUH_GROUP=${WAZUH_GROUP:-'wazuh'}
 WAZUH_SERVER_REPO_REF=${WAZUH_SERVER_REPO_REF:-"refs/tags/v${WAZUH_SERVER_REPO_VERSION}"}
+OSSEC_PATH=${OSSEC_PATH:-'/var/ossec'}
 REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
 
 # Create a secure temporary directory for utilities

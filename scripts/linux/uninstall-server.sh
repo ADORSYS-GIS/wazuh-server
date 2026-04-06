@@ -136,47 +136,51 @@ STEP_NUMBER=0
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
 
-print_step ((++STEP_NUMBER)) "Uninstalling Wazuh agent..."
-download_and_verify_file "$WAZUH_SERVER_REPO_URL/scripts/linux/uninstall-agent.sh" "$TMP_FOLDER/uninstall-agent.sh" "scripts/linux/uninstall-agent.sh" "Wazuh agent uninstall script" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
-if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-wazuh-server.sh") 2>&1; then
+print_step $((STEP_NUMBER + 1)) "Uninstalling Wazuh agent..."
+download_and_verify_file "$WAZUH_SERVER_REPO_URL/scripts/linux/uninstall.sh" "$TMP_FOLDER/uninstall-agent.sh" "scripts/linux/uninstall.sh" "Wazuh agent uninstall script" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
+if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-agent.sh") 2>&1; then
     error_message "Failed to uninstall wazuh-server"
     exit 1
 fi
 
 linux_uninstall_pattern="scripts/linux/uninstall.sh"
-for component in "trivy" "cert-oauth2" "suricata" "yara"; do
-    INSTALL_VAR="INSTALL_$(echo "$component" | tr '[:lower:]' '[:upper:]')"
 
-    print_step ((++STEP_NUMBER)) "Processing $component uninstallation..."
+# Step 2: Uninstall components if flag is set
 
-    if [ "${!INSTALL_VAR}" = "TRUE" ]; then
-        case "$component" in
-            "trivy")
-                download_and_verify_file "$WAZUH_TRIVY_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-trivy.sh" "$linux_uninstall_pattern" "trivy uninstall script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
-                    error_exit "Failed to uninstall trivy"
-                fi
-                ;;
-            "cert-oauth2")
-                download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-cert-oauth2.sh" "$linux_uninstall_pattern" "cert-oauth2 uninstall script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" bash "$TMP_FOLDER/uninstall-cert-oauth2.sh") 2>&1; then
-                    error_exit "Failed to uninstall cert-oauth2"
-                fi
-                ;;
-            "suricata")
-                download_and_verify_file "$WAZUH_SURICATA_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-suricata.sh" "$linux_uninstall_pattern" "suricata uninstall script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-suricata.sh" --mode ids) 2>&1; then
-                    error_exit "Failed to uninstall Suricata"
-                fi
-                ;;
-            "yara")
-                download_and_verify_file "$WAZUH_YARA_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-yara-server.sh" "$linux_uninstall_pattern" "yara uninstall script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
-                if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-yara-server.sh") 2>&1; then
-                    error_exit "Failed to uninstall Yara"
-                fi
-                 ;;
-        esac
+# Uninstall Trivy if flag is set
+if [ "$UNINSTALL_TRIVY" = "TRUE" ]; then
+    print_step $((STEP_NUMBER + 1)) "Processing trivy uninstallation..."
+    download_and_verify_file "$WAZUH_TRIVY_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-trivy.sh" "$linux_uninstall_pattern" "trivy uninstall script" "$WAZUH_TRIVY_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-trivy.sh") 2>&1; then
+        error_exit "Failed to uninstall trivy"
     fi
-done
+fi
+
+# Uninstall cert-oauth2 if flag is set
+if [ "$UNINSTALL_CERT_OAUTH2" = "TRUE" ]; then
+    print_step $((STEP_NUMBER + 1)) "Processing cert-oauth2 uninstallation..."
+    download_and_verify_file "$WAZUH_CERT_OAUTH2_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-cert-oauth2.sh" "$linux_uninstall_pattern" "cert-oauth2 uninstall script" "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env OSSEC_CONF_PATH="$OSSEC_CONF_PATH" bash "$TMP_FOLDER/uninstall-cert-oauth2.sh") 2>&1; then
+        error_exit "Failed to uninstall cert-oauth2"
+    fi
+fi
+
+# Uninstall Suricata if flag is set
+if [ "$UNINSTALL_SURICATA" = "TRUE" ]; then
+    print_step $((STEP_NUMBER + 1)) "Processing suricata uninstallation..."
+    download_and_verify_file "$WAZUH_SURICATA_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-suricata.sh" "$linux_uninstall_pattern" "suricata uninstall script" "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-suricata.sh" --mode ids) 2>&1; then
+        error_exit "Failed to uninstall Suricata"
+    fi
+fi
+
+# Uninstall Yara if flag is set
+if [ "$UNINSTALL_YARA" = "TRUE" ]; then
+    print_step $((STEP_NUMBER + 1)) "Processing yara uninstallation..."
+    download_and_verify_file "$WAZUH_YARA_REPO_URL/$linux_uninstall_pattern" "$TMP_FOLDER/uninstall-yara-server.sh" "$linux_uninstall_pattern" "yara uninstall script" "$WAZUH_YARA_REPO_URL/checksums.sha256"
+    if ! (maybe_sudo env bash "$TMP_FOLDER/uninstall-yara-server.sh") 2>&1; then
+        error_exit "Failed to uninstall Yara"
+    fi
+fi
 
 success_message "Uninstallation completed successfully."
