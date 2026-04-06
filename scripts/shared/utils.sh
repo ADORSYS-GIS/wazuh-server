@@ -187,7 +187,13 @@ download_and_verify_file() {
     
     if [ -f "$checksum_file" ]; then
         local expected
-        expected=$(grep "$pattern" "$checksum_file" | awk '{print $1}')
+        match=$(grep "$pattern" "$checksum_file")
+
+        if [ -z "$match" ]; then
+        error_exit "Error: Pattern '$pattern' not found in file '$checksum_file'" >&2
+        fi
+
+        expected=$(echo "$match" | awk '{print $1}')
         
         if [ -n "$expected" ]; then
             if ! verify_checksum "$dest" "$expected"; then

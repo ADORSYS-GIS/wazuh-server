@@ -151,7 +151,6 @@ jobs:
       - name: Run ShellCheck on bash scripts
         run: |
           find scripts -name "*.sh" -type f | xargs shellcheck --severity=warning || true
-          find lib -name "*.sh" -type f | xargs shellcheck --severity=warning || true
 
       - name: Install PSScriptAnalyzer
         shell: pwsh

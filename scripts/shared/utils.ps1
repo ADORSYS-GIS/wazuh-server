@@ -160,7 +160,17 @@ function Download-And-VerifyFile {
     }
     
     if (-not [string]::IsNullOrWhiteSpace($ChecksumFile) -and (Test-Path -Path $ChecksumFile)) {
-        $expectedHash = (Select-String -Path $ChecksumFile -Pattern $ChecksumPattern).Line.Split(" ")[0]
+        $match = Select-String -Path $ChecksumFile -Pattern $ChecksumPattern | Select-Object -First 1
+
+        $match = Select-String -Path $ChecksumFile -Pattern $ChecksumPattern | Select-Object -First 1
+
+        if (-not $match) {
+            Write-Error "Pattern '$ChecksumPattern' not found in file '$ChecksumFile'"
+            exit 1
+        }
+
+        $expectedHash = $match.Line.Split(" ")[0]
+
         if (-not [string]::IsNullOrWhiteSpace($expectedHash)) {
             if (-not (Test-Checksum -FilePath $Destination -ExpectedHash $expectedHash)) {
                 ErrorExit "$FileName checksum verification failed"
