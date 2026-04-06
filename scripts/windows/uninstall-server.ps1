@@ -18,6 +18,10 @@ $WAZUH_SERVER_REPO_REF = if ($env:WAZUH_SERVER_REPO_REF) { $env:WAZUH_SERVER_REP
 $WAZUH_CERT_OAUTH2_REPO_REF = if ($env:WAZUH_CERT_OAUTH2_REPO_REF) { $env:WAZUH_CERT_OAUTH2_REPO_REF } else { "refs/tags/v$WOPS_VERSION" }
 $WAZUH_SURICATA_REPO_REF = if ($env:WAZUH_SURICATA_REPO_REF) { $env:WAZUH_SURICATA_REPO_REF } else { "refs/tags/v$WAZUH_SURICATA_VERSION" }
 $REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+
+$WAZUH_SERVER_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+$WAZUH_SURICATA_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
+$WAZUH_CERT_OAUTH2_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF"
 $SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
 
 # Create a secure temporary directory for utilities
@@ -101,7 +105,6 @@ if ($Help) {
 
 # Function to uninstall Suricata using automated script
 function Uninstall-SuricataClient {
-    $UninstallerURL = "$SuricataRepoUrl/scripts/windows/uninstall-automated.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-suricata-automated.ps1"
     $global:UninstallerFiles += $UninstallerPath
 
@@ -109,7 +112,7 @@ function Uninstall-SuricataClient {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             InfoMessage "Downloading automated Suricata uninstall script (attempt $attempt of $maxAttempts)..."
-            Download-And-VerifyFile -Url $UninstallerURL -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall-automated.ps1" -FileName "uninstall-suricata-automated.ps1"
+            Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/uninstall-automated.ps1" -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall-automated.ps1" -FileName "uninstall-suricata-automated.ps1"
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }
@@ -130,7 +133,6 @@ function Uninstall-SuricataClient {
 
 # Function to uninstall Wazuh Agent by delegating to inner script
 function Uninstall-WazuhAgent {
-    $UninstallerURL = "$REPO_URL/scripts/windows/uninstall.ps1"
     $UninstallerPath = "$env:TEMP\uninstall-wazuh-agent.ps1"
     $global:UninstallerFiles += $UninstallerPath
 
@@ -138,7 +140,7 @@ function Uninstall-WazuhAgent {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             InfoMessage "Downloading Wazuh agent uninstall script (attempt $attempt of $maxAttempts)..."
-            Download-And-VerifyFile -Url $UninstallerURL -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall.ps1" -FileName "uninstall-wazuh-agent.ps1"
+            Download-And-VerifyFile -Url "$WAZUH_SERVER_REPO_URL/scripts/windows/uninstall.ps1" -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall.ps1" -FileName "uninstall-wazuh-agent.ps1" -ChecksumUrl "$WAZUH_SERVER_REPO_URL/checksums.sha256"
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }

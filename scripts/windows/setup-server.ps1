@@ -28,7 +28,8 @@ $WAZUH_CERT_OAUTH2_REPO_REF = if ($env:WAZUH_CERT_OAUTH2_REPO_REF) { $env:WAZUH_
 $WAZUH_SURICATA_REPO_REF = if ($env:WAZUH_SURICATA_REPO_REF) { $env:WAZUH_SURICATA_REPO_REF } else { "refs/tags/v$WAZUH_SURICATA_VERSION" }
 
 $WAZUH_SERVER_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
-$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
+$WAZUH_SURICATA_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
+$WAZUH_CERT_OAUTH2_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF"
 $VERSION_FILE_URL = "$WAZUH_SERVER_REPO_URL/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
 
@@ -82,13 +83,12 @@ function Remove-InstallerFiles {
 
 # Step 1: Download dependency script and execute
 function Install-Dependencies {
-    $InstallerURL = "$WAZUH_SERVER_REPO_URL/scripts/windows/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing dependency script..."
-        Download-And-VerifyFile -Url $InstallerURL -Destination $InstallerPath -ChecksumPattern "scripts/windows/deps.ps1" -FileName "deps.ps1"
+        Download-And-VerifyFile -Url $WAZUH_SERVER_REPO_URL/scripts/windows/deps.ps1 -Destination $InstallerPath -ChecksumPattern "scripts/windows/deps.ps1" -FileName "deps.ps1" -ChecksumUrl "$WAZUH_SERVER_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Dependencies installed successfully"
     }
@@ -100,13 +100,12 @@ function Install-Dependencies {
 
 # Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
-    $InstallerURL = "$WAZUH_SERVER_REPO_URL/scripts/windows/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing Wazuh agent script..."
-        Download-And-VerifyFile -Url $InstallerURL -Destination $InstallerPath -ChecksumPattern "scripts/windows/install.ps1" -FileName "install.ps1"
+        Download-And-VerifyFile -Url "$WAZUH_SERVER_REPO_URL/scripts/windows/install.ps1" -Destination $InstallerPath -ChecksumPattern "scripts/windows/install.ps1" -FileName "install.ps1" -ChecksumUrl "$WAZUH_SERVER_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Wazuh agent installed successfully"
     }
@@ -117,14 +116,14 @@ function Install-WazuhAgent {
 }
 
 function Install-OAuth2Client {
-    $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF/scripts/windows/install.ps1"
     $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
     $global:InstallerFiles += $OAuth2Script
 
     try {
         InfoMessage "Downloading and executing wazuh-cert-oauth2-client script..."
-        Download-And-VerifyFile -Url $OAuth2Url -Destination $OAuth2Script -ChecksumPattern "scripts/windows/install.ps1" -FileName "wazuh-cert-oauth2-client-install.ps1"
+        Download-And-VerifyFile -Url "$WAZUH_CERT_OAUTH2_REPO_URL/scripts/windows/install.ps1" -Destination $OAuth2Script -ChecksumPattern "scripts/windows/install.ps1" -FileName "wazuh-cert-oauth2-client-install.ps1" -ChecksumUrl "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ErrorAction Stop
+        SuccessMessage "wazuh-cert-oauth2-client installed successfully"
     }
     catch {
         ErrorMessage "Error during wazuh-cert-oauth2-client installation: $($_.Exception.Message)"
@@ -132,13 +131,12 @@ function Install-OAuth2Client {
 }
 
 function Install-SuricataClient {
-    $SuricataUrl = "$SuricataRepoUrl/scripts/windows/install-suricata-silent.ps1"
     $SuricataScript = "$env:TEMP\install-suricata-silent.ps1"
     $global:InstallerFiles += $SuricataScript
 
     try {
         InfoMessage "Downloading and executing silent Suricata installation script..."
-        Download-And-VerifyFile -Url $SuricataUrl -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1"
+        Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/install-suricata-silent.ps1" -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1"s
         & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
         SuccessMessage "Suricata installed successfully with automated silent installation"
     }

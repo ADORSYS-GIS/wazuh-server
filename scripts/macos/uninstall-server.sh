@@ -138,15 +138,14 @@ STEP_NUMBER=0
 
 # Step 0: Download all uninstall scripts
 info_message "Downloading all uninstall scripts..."
+macos_uninstall_pattern="scripts/macos/uninstall.sh"
 
 print_step $((STEP_NUMBER + 1)) "Uninstalling Wazuh agent..."
-download_and_verify_file "$WAZUH_SERVER_REPO_URL/scripts/linux/uninstall-agent.sh" "$TMP_FOLDER/uninstall-agent.sh" "scripts/linux/uninstall-agent.sh" "Wazuh agent uninstall script" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
+download_and_verify_file "$WAZUH_SERVER_REPO_URL/$macos_uninstall_pattern" "$TMP_FOLDER/uninstall-agent.sh" "$macos_uninstall_pattern" "Wazuh agent uninstall script" "$WAZUH_SERVER_REPO_URL/checksums.sha256"
 if ! (maybe_sudo bash "$TMP_FOLDER/uninstall-agent.sh") 2>&1; then
     error_message "Failed to uninstall wazuh-server"
     exit 1
 fi
-
-macos_uninstall_pattern="scripts/macos/uninstall.sh"
 
 # Step 2: Uninstall components if flag is set
 
