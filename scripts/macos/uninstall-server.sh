@@ -34,10 +34,10 @@ WAZUH_YARA_REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/$W
 WAZUH_CERT_OAUTH2_REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF"
 
 # Installation choice variables
-INSTALL_TRIVY="FALSE"
-INSTALL_CERT_OAUTH2="FALSE"
-INSTALL_SURICATA="FALSE"
-INSTALL_YARA="FALSE"
+UNINSTALL_TRIVY="FALSE"
+UNINSTALL_CERT_OAUTH2="FALSE"
+UNINSTALL_SURICATA="FALSE"
+UNINSTALL_YARA="FALSE"
 
 # Create a secure temporary directory for utilities
 TMP_FOLDER=$(mktemp -d)
@@ -82,7 +82,7 @@ fi
 # CLI Parsing
 # ==============================================================================
 show_help() {
-    echo "Usage: $0 [-s] [-t] [-y] [-h]"
+    echo "Usage: $0 [-s] [-t] [-y] [-c] [-h]"
     echo ""
     echo "Streamlined Wazuh uninstallation for macOS servers"
     echo ""
@@ -90,6 +90,7 @@ show_help() {
     echo "  -s    Uninstall Suricata (optional)"
     echo "  -t    Uninstall Trivy (optional)"
     echo "  -y    Uninstall Yara (optional)"
+    echo "  -c    Uninstall cert-oauth2 (optional)"
     echo "  -h    Show this help message"
     echo ""
     echo "Environment Variables:"
@@ -111,14 +112,16 @@ show_help() {
     echo "  $0 -s                    # Uninstall Wazuh agent + Suricata"
     echo "  $0 -t                    # Uninstall Wazuh agent + Trivy"
     echo "  $0 -y                    # Uninstall Wazuh agent + Yara"
-    echo "  $0 -s -t -y              # Uninstall all components"
+    echo "  $0 -c                    # Uninstall Wazuh agent + cert-oauth2"
+    echo "  $0 -s -t -y -c           # Uninstall all components"
 }
 
-while getopts ":sthy" opt; do
+while getopts ":sthyc" opt; do
   case $opt in
     s) UNINSTALL_SURICATA="TRUE" ;;
     t) UNINSTALL_TRIVY="TRUE" ;;
     y) UNINSTALL_YARA="TRUE" ;;
+    c) UNINSTALL_CERT_OAUTH2="TRUE" ;;
     h) show_help; exit 0 ;;
     \?) echo "Invalid option: -$OPTARG" >&2; show_help; exit 1 ;;
   esac
@@ -129,7 +132,7 @@ done
 # ==============================================================================
 
 info_message "Starting uninstallation. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: UNINSTALL_SURICATA=$UNINSTALL_SURICATA UNINSTALL_TRIVY=$UNINSTALL_TRIVY UNINSTALL_YARA=$UNINSTALL_YARA"
+info_message "Options: UNINSTALL_SURICATA=$UNINSTALL_SURICATA UNINSTALL_TRIVY=$UNINSTALL_TRIVY UNINSTALL_YARA=$UNINSTALL_YARA UNINSTALL_CERT_OAUTH2=$UNINSTALL_CERT_OAUTH2"
 
 STEP_NUMBER=0
 
