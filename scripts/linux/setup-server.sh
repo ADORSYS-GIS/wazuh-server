@@ -40,11 +40,11 @@ INSTALL_SURICATA="FALSE"
 INSTALL_YARA="FALSE"
 
 # Parse command line options
-while getopts ":hcsy" opt; do
+while getopts ":hcsty" opt; do
   case $opt in
     c) INSTALL_CERT_OAUTH2="TRUE"
     ;;
-    h) echo "Usage: $0 [-c] [-s] [-y] [-h]"
+    h) echo "Usage: $0 [-c] [-s] [-y] [-t] [-h]"
        echo ""
        echo "Streamlined Wazuh Agent installation for Linux servers"
        echo ""
@@ -52,25 +52,39 @@ while getopts ":hcsy" opt; do
        echo "  -c    Install cert-oauth2 client (optional)"
        echo "  -s    Install Suricata (optional, IDS mode)"
        echo "  -y    Install Yara (optional)"
+       echo "  -t    Install Trivy (optional)"
        echo "  -h    Show this help message"
        echo ""
        echo "Environment Variables:"
-       echo "  WAZUH_MANAGER         Wazuh manager hostname (default: wazuh.example.com)"
-       echo "  WAZUH_AGENT_VERSION   Wazuh agent version (default: 4.13.1-1)"
-       echo "  WAZUH_SERVER_TAG      Repository tag (default: 0.1.7)"
-       echo "  LOG_LEVEL            Logging level (default: INFO)"
+       echo "  WAZUH_MANAGER              Wazuh manager hostname (default: wazuh.example.com)"
+       echo "  WAZUH_AGENT_VERSION        Wazuh agent version (default: 4.14.2-1)"
+       echo "  WAZUH_SERVER_TAG           Repository tag for server scripts (default: 0.1.7)"
+       echo "  WAZUH_SERVER_REPO_REF      Full repository reference (default: refs/tags/v\${WAZUH_SERVER_TAG})"
+       echo "  WOPS_VERSION               cert-oauth2 client version (default: 0.3.0)"
+       echo "  WAZUH_CERT_OAUTH2_REPO_REF cert-oauth2 repository reference (default: refs/tags/v\${WOPS_VERSION})"
+       echo "  WAZUH_SURICATA_VERSION     Suricata version (default: 0.1.5)"
+       echo "  WAZUH_SURICATA_REPO_REF    Suricata repository reference (default: refs/tags/v\${WAZUH_SURICATA_VERSION})"
+       echo "  WAZUH_YARA_VERSION         Yara version (default: 0.3.14)"
+       echo "  WAZUH_YARA_REPO_REF        Yara repository reference (default: refs/tags/v\${WAZUH_YARA_VERSION})"
+       echo "  WAZUH_TRIVY_REPO_REF       Trivy repository reference (default: main)"
+       echo ""
+       echo "  Note: You can pass either tags (e.g., '0.1.7') or full repo refs"
+       echo "        (e.g., 'refs/tags/v0.1.7' or 'refs/heads/main')"
        echo ""
        echo "Examples:"
        echo "  $0                    # Core installation only"
        echo "  $0 -c                 # With cert-oauth2"
        echo "  $0 -s                 # With Suricata (IDS)"
        echo "  $0 -y                 # With Yara"
-       echo "  $0 -c -s -y           # With all optional components"
+       echo "  $0 -t                 # With Trivy"
+       echo "  $0 -c -s -y -t        # With all optional components"
        echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
        echo ""
        exit 0
     ;;
     s) INSTALL_SURICATA="TRUE"
+    ;;
+    t) INSTALL_TRIVY="TRUE"
     ;;
     y) INSTALL_YARA="TRUE"
     ;;
@@ -132,7 +146,7 @@ fi
 # ==============================================================================
 
 info_message "Starting setup. Using temporary directory: \"$TMP_FOLDER\""
-info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA INSTALL_YARA=$INSTALL_YARA"
+info_message "Options: INSTALL_CERT_OAUTH2=$INSTALL_CERT_OAUTH2 INSTALL_SURICATA=$INSTALL_SURICATA INSTALL_TRIVY=$INSTALL_TRIVY INSTALL_YARA=$INSTALL_YARA"
 
 # Step -1: Download all core scripts
 info_message "Downloading core component scripts..."

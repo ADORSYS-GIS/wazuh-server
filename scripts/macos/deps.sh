@@ -1,20 +1,22 @@
 #!/bin/sh
 
 # Set shell options
-
-# Set shell options
 if [ -n "$BASH_VERSION" ]; then
     set -euo pipefail
 else
     set -eu
 fi
 
+WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
+WAZUH_SERVER_REPO_REF=${WAZUH_SERVER_REPO_REF:-"refs/tags/v${WAZUH_SERVER_REPO_VERSION}"}
+REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+
 # Create a secure temporary directory for utilities
 UTILS_TMP=$(mktemp -d)
 
 # Download utils.sh from repository
 trap 'rm -rf "$UTILS_TMP"' EXIT
-if ! curl "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/${WAZUH_AGENT_REPO_REF}/scripts/shared/utils.sh" -o "$UTILS_TMP/utils.sh"; then
+if ! curl "$REPO_URL/scripts/shared/utils.sh" -o "$UTILS_TMP/utils.sh"; then
     echo "Failed to download utils.sh"
     exit 1
 fi
@@ -28,13 +30,13 @@ calculate_sha256_bootstrap() {
     fi
 }
 
-# 1. Download checksums
-if ! curl "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/${WAZUH_AGENT_REPO_REF}/checksums.sha256" -o "$UTILS_TMP/checksums.sha256"; then
+# Download checksums and verify utils.sh integrity BEFORE sourcing it
+if ! curl "$REPO_URL/checksums.sha256" -o "$UTILS_TMP/checksums.sha256"; then
     echo "Failed to download checksums.sha256"
     exit 1
 fi
+CHECKSUMS_FILE="$UTILS_TMP/checksums.sha256"
 
-# 2. Verify utils.sh integrity BEFORE sourcing it
 EXPECTED_HASH=$(grep "scripts/shared/utils.sh" "$UTILS_TMP/checksums.sha256" | awk '{print $1}')
 ACTUAL_HASH=$(calculate_sha256_bootstrap "$UTILS_TMP/utils.sh")
 
@@ -45,7 +47,7 @@ if [ -z "$EXPECTED_HASH" ] || [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
     exit 1
 fi
 
-# 3. Source utils.sh only after verification
+# Source utils.sh only after verification
 . "$UTILS_TMP/utils.sh"
 
 LOGGED_IN_USER=$(scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /loginwindow/ {print $3}')
