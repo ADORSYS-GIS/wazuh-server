@@ -112,7 +112,7 @@ function Uninstall-SuricataClient {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
             InfoMessage "Downloading automated Suricata uninstall script (attempt $attempt of $maxAttempts)..."
-            Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/uninstall-automated.ps1" -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall-automated.ps1" -FileName "uninstall-suricata-automated.ps1"
+            Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/uninstall-automated.ps1" -Destination $UninstallerPath -ChecksumPattern "scripts/windows/uninstall-automated.ps1" -FileName "uninstall-suricata-automated.ps1" -ChecksumUrl "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
             if ((Get-Item $UninstallerPath).Length -le 64) {
                 throw "Downloaded file appears too small or empty."
             }
