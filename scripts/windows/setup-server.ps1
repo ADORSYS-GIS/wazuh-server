@@ -136,7 +136,7 @@ function Install-SuricataClient {
 
     try {
         InfoMessage "Downloading and executing silent Suricata installation script..."
-        Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/install-suricata-silent.ps1" -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1"s
+        Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/install-suricata-silent.ps1" -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1" -ChecksumUrl "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
         SuccessMessage "Suricata installed successfully with automated silent installation"
     }
