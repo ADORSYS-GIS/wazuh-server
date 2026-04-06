@@ -12,7 +12,7 @@ fi
 WAZUH_MANAGER=${WAZUH_MANAGER:-'wazuh.example.com'}
 WAZUH_AGENT_VERSION=${WAZUH_AGENT_VERSION:-'4.14.2-1'}
 WAZUH_SERVER_TAG=${WAZUH_SERVER_TAG:-'0.1.7'}
-WAZUH_SERVER_REPO_REF=${WAZUH_SERVER_REPO_REF:-"refs/tags/v${WAZUH_SERVER_REPO_VERSION}"}
+WAZUH_SERVER_REPO_REF=${WAZUH_SERVER_REPO_REF:-"refs/tags/v${WAZUH_SERVER_TAG}"}
 REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
 
 # Download utils.sh from repository
@@ -121,8 +121,6 @@ get_installed_version() {
 }
 
 config() {
-    REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-agent/${WAZUH_AGENT_REPO_REF}"
-
     # Replace MANAGER_IP placeholder with the actual manager IP in ossec.conf for macOS
     if ! maybe_sudo grep -q "<address>$WAZUH_MANAGER</address>" "$OSSEC_CONF_PATH"; then
         info_message "Configuring Wazuh agent with manager address $WAZUH_MANAGER in $OSSEC_CONF_PATH"
