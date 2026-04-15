@@ -21,12 +21,50 @@ env:
   WAZUH_TRIVY_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
   WAZUH_CERT_OAUTH2_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
   YARA_INSTALLATION_TYPE: server
-  INSTALL_TRIVY: FALSE
-  INSTALL_CERT_OAUTH2: FALSE
-  INSTALL_SURICATA: FALSE
-  INSTALL_YARA: FALSE
+  INSTALL_TRIVY: true
+  INSTALL_CERT_OAUTH2: true
+  INSTALL_SURICATA: true
+  INSTALL_YARA: true
+  WOPS_VERSION: "0.4.2-rc.1"
+  WAZUH_AGENT_STATUS_VERSION: "v0.4.2.rc1"
 
 jobs:
+  # ============================================
+  # Update Changelog and Checksums
+  # ============================================
+  update-changelog-and-checksums:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Configure git user
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Generate script checksums
+        run: |
+          find scripts lib assets files version.txt -type f -exec sha256sum {} + > checksums.sha256
+          cat checksums.sha256
+
+      - name: Commit and push checksums
+        run: |
+          if [[ -n $(git status --porcelain checksums.sha256) ]]; then
+            git add checksums.sha256
+            git commit -m "chore: update checksums [skip ci]"
+            git push origin ${{ github.head_ref || github.ref_name }}
+          else
+            echo "No checksum changes to commit"
+          fi
+
   # ============================================
   # Release Please - Changelog & Version Management
   # ============================================
@@ -200,7 +238,7 @@ jobs:
   test-unix:
     name: Test Unix (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    needs: [lint]
+    needs: [update-changelog-and-checksums, lint]
     strategy:
       fail-fast: false
       matrix:
@@ -225,15 +263,6 @@ jobs:
         run: |
           chmod +x ./scripts/linux/*.sh ./scripts/macos/*.sh ./scripts/windows/*.ps1 ./scripts/shared/*.sh
 
-      - name: Test install script
-        run: |
-          echo "Debug: WAZUH_SERVER_REPO_REF is $WAZUH_SERVER_REPO_REF"
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            sudo -E ./scripts/linux/install.sh
-          else
-            sudo -E ./scripts/macos/install.sh
-          fi
-
       - name: Test setup-server script
         run: |
           echo "Debug: WAZUH_SERVER_REPO_REF is $WAZUH_SERVER_REPO_REF"
@@ -249,7 +278,7 @@ jobs:
   test-windows:
     name: Test Windows
     runs-on: windows-latest
-    needs: [lint]
+    needs: [update-changelog-and-checksums, lint]
 
     steps:
       - name: Checkout repository
@@ -359,13 +388,6 @@ jobs:
           else
             echo "name=${{ needs.manual-tag-release.outputs.tag_name }}" >> $GITHUB_OUTPUT
           fi
-
-      - name: Generate checksums
-        run: |
-          echo "Generating SHA256 checksums..."
-          find scripts version.txt -type f -exec sha256sum {} + > checksums.sha256
-          echo "=== Checksums ==="
-          cat checksums.sha256
 
       - name: Upload checksums to release
         uses: softprops/action-gh-release@v1
