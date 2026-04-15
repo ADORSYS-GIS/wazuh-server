@@ -33,13 +33,13 @@ WAZUH_TRIVY_REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-trivy/
 WAZUH_YARA_REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-yara/$WAZUH_YARA_REPO_REF"
 WAZUH_CERT_OAUTH2_REPO_URL="https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF"
 
-# Installation choice variables
-INSTALL_TRIVY="FALSE"
-INSTALL_CERT_OAUTH2="FALSE"
-INSTALL_SURICATA="FALSE"
-INSTALL_YARA="FALSE"
+# Installation choice variables (can be set via environment variables or command-line flags)
+INSTALL_TRIVY="${INSTALL_TRIVY:-FALSE}"
+INSTALL_CERT_OAUTH2="${INSTALL_CERT_OAUTH2:-FALSE}"
+INSTALL_SURICATA="${INSTALL_SURICATA:-FALSE}"
+INSTALL_YARA="${INSTALL_YARA:-FALSE}"
 
-# Parse command line options
+# Parse command line options (overrides environment variables if both are set)
 while getopts ":hcsty" opt; do
   case $opt in
     c) INSTALL_CERT_OAUTH2="TRUE"
@@ -56,6 +56,10 @@ while getopts ":hcsty" opt; do
        echo "  -h    Show this help message"
        echo ""
        echo "Environment Variables:"
+       echo "  INSTALL_CERT_OAUTH2      Set to 'TRUE' to install cert-oauth2 (default: false)"
+       echo "  INSTALL_SURICATA         Set to 'TRUE' to install Suricata (default: false)"
+       echo "  INSTALL_YARA             Set to 'TRUE' to install Yara (default: false)"
+       echo "  INSTALL_TRIVY            Set to 'TRUE' to install Trivy (default: false)"
        echo "  WAZUH_MANAGER              Wazuh manager hostname (default: wazuh.example.com)"
        echo "  WAZUH_AGENT_VERSION        Wazuh agent version (default: 4.14.2-1)"
        echo "  WAZUH_SERVER_TAG           Repository tag for server scripts (default: 0.1.7)"
@@ -79,6 +83,7 @@ while getopts ":hcsty" opt; do
        echo "  $0 -t                 # With Trivy"
        echo "  $0 -c -s -y -t        # With all optional components"
        echo "  WAZUH_MANAGER='my-wazuh.com' $0 -c"
+       echo "  INSTALL_CERT_OAUTH2=TRUE INSTALL_SURICATA=TRUE $0"
        echo ""
        exit 0
     ;;
