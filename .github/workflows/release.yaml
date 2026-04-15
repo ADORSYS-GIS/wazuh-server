@@ -52,7 +52,7 @@ jobs:
 
       - name: Generate script checksums
         run: |
-          find scripts lib assets files version.txt -type f -exec sha256sum {} + > checksums.sha256
+          find scripts assets version.txt -type f -exec sha256sum {} + > checksums.sha256
           cat checksums.sha256
 
       - name: Commit and push checksums
