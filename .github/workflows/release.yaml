@@ -334,9 +334,6 @@ jobs:
             "scripts/linux/uninstall.sh"
             "scripts/macos/uninstall.sh"
             "scripts/windows/uninstall.ps1"
-            "scripts/linux/setup-docker.sh"
-            "scripts/macos/setup-docker.sh"
-            "scripts/windows/setup-docker.ps1"
             "scripts/shared/utils.sh"
             "scripts/shared/utils.ps1"
           )
