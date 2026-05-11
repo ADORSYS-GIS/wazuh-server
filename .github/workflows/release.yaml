@@ -15,11 +15,6 @@ on:
       - hotfix/**
 
 env:
-  WAZUH_SERVER_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
-  WAZUH_YARA_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
-  WAZUH_SURICATA_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
-  WAZUH_TRIVY_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
-  WAZUH_CERT_OAUTH2_REPO_REF: refs/heads/${{ github.head_ref || github.ref_name }}
   YARA_INSTALLATION_TYPE: server
   INSTALL_TRIVY: true
   INSTALL_CERT_OAUTH2: true
