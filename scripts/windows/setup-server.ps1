@@ -13,66 +13,64 @@ param(
 # Set strict mode for script execution
 Set-StrictMode -Version Latest
 
-# Variables (default log level, paths)
-$LOG_LEVEL = if ($env:LOG_LEVEL) { $env:LOG_LEVEL } else { "INFO" }
+# Variables
 $WAZUH_MANAGER = if ($env:WAZUH_MANAGER) { $env:WAZUH_MANAGER } else { "wazuh.example.com" }
-$WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.13.1-1" }
+$WAZUH_AGENT_VERSION = if ($env:WAZUH_AGENT_VERSION) { $env:WAZUH_AGENT_VERSION } else { "4.14.2-1" }
 $WAZUH_SERVER_TAG = if ($env:WAZUH_SERVER_TAG) { $env:WAZUH_SERVER_TAG } else { "0.1.7" }
 $WAZUH_SURICATA_VERSION = if ($env:WAZUH_SURICATA_VERSION) { $env:WAZUH_SURICATA_VERSION } else { "0.1.5" }
-$WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.3.0" }
+$WOPS_VERSION = if ($env:WOPS_VERSION) { $env:WOPS_VERSION } else { "0.4.2" }
 $APP_NAME = if ($env:APP_NAME) { $env:APP_NAME } else { "wazuh-cert-oauth2-client" }
 $OSSEC_PATH = "C:\Program Files (x86)\ossec-agent\" 
 $OSSEC_CONF_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "ossec.conf"
-$REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/refs/tags/v$WAZUH_SERVER_TAG"
-$SuricataRepoUrl = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/refs/tags/v$WAZUH_SURICATA_VERSION"
-$VERSION_FILE_URL = "$REPO_URL/version.txt"
+
+$WAZUH_SERVER_REPO_REF = if ($env:WAZUH_SERVER_REPO_REF) { $env:WAZUH_SERVER_REPO_REF } else { "refs/tags/v$WAZUH_SERVER_TAG" }
+$WAZUH_CERT_OAUTH2_REPO_REF = if ($env:WAZUH_CERT_OAUTH2_REPO_REF) { $env:WAZUH_CERT_OAUTH2_REPO_REF } else { "refs/tags/v$WOPS_VERSION" }
+$WAZUH_SURICATA_REPO_REF = if ($env:WAZUH_SURICATA_REPO_REF) { $env:WAZUH_SURICATA_REPO_REF } else { "refs/tags/v$WAZUH_SURICATA_VERSION" }
+
+$WAZUH_SERVER_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF"
+$WAZUH_SURICATA_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-suricata/$WAZUH_SURICATA_REPO_REF"
+$WAZUH_CERT_OAUTH2_REPO_URL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/$WAZUH_CERT_OAUTH2_REPO_REF"
+$VERSION_FILE_URL = "$WAZUH_SERVER_REPO_URL/version.txt"
 $VERSION_FILE_PATH = Join-Path -Path $OSSEC_PATH -ChildPath "version.txt"
+
+# Create a secure temporary directory for utilities
+$UtilsTmp = Join-Path $env:TEMP "wazuh-utils-$(Get-Random)"
+New-Item -ItemType Directory -Path $UtilsTmp -Force | Out-Null
+
+# Source shared utilities
+try {
+    $ChecksumsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/checksums.sha256"
+    $UtilsURL = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-server/$WAZUH_SERVER_REPO_REF/scripts/shared/utils.ps1"
+
+    $global:ChecksumsPath = Join-Path $UtilsTmp "checksums.sha256"
+    $UtilsPath = Join-Path $UtilsTmp "utils.ps1"
+
+    Invoke-WebRequest -Uri $ChecksumsURL -OutFile $ChecksumsPath -ErrorAction Stop
+    Invoke-WebRequest -Uri $UtilsURL -OutFile $UtilsPath -ErrorAction Stop
+
+    # Verification function (bootstrap)
+    function Get-FileChecksum-Bootstrap {
+        param([string]$FilePath)
+        return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash.ToLower()
+    }
+
+    $ExpectedHash = (Select-String -Path $ChecksumsPath -Pattern "scripts/shared/utils.ps1").Line.Split(" ")[0]
+    $ActualHash = Get-FileChecksum-Bootstrap -FilePath $UtilsPath
+
+    if ([string]::IsNullOrWhiteSpace($ExpectedHash) -or ($ActualHash -ne $ExpectedHash.ToLower())) {
+        Write-Error "Checksum verification failed for utils.ps1"
+        exit 1
+    }
+
+    . $UtilsPath
+}
+catch {
+    Write-Error "Failed to initialize utilities: $($_.Exception.Message)"
+    exit 1
+}
 
 # Global array to track installer files
 $global:InstallerFiles = @()
-
-# Function to log messages with a timestamp
-function Log {
-    param (
-        [string]$Level,
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "$Timestamp $Level $Message" -ForegroundColor $Color
-}
-
-function InfoMessage {
-    param ([string]$Message)
-    Log "[INFO]" $Message "Cyan"
-}
-
-function WarningMessage {
-    param ([string]$Message)
-    Log "[WARNING]" $Message "Yellow"
-}
-
-function SuccessMessage {
-    param ([string]$Message)
-    Log "[SUCCESS]" $Message "Green"
-}
-
-function ErrorMessage {
-    param ([string]$Message)
-    Log "[ERROR]" $Message "Red"
-}
-
-function SectionSeparator {
-    param (
-        [string]$SectionName
-    )
-    Write-Host ""
-    Write-Host "==================================================" -ForegroundColor Magenta
-    Write-Host "  $SectionName" -ForegroundColor Magenta
-    Write-Host "==================================================" -ForegroundColor Magenta
-    Write-Host ""
-}
-
 # Cleanup function to remove installer files at the end
 function Remove-InstallerFiles {
     foreach ($file in $global:InstallerFiles) {
@@ -85,14 +83,12 @@ function Remove-InstallerFiles {
 
 # Step 1: Download dependency script and execute
 function Install-Dependencies {
-    $InstallerURL = "$REPO_URL/scripts/deps.ps1"
     $InstallerPath = "$env:TEMP\deps.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing dependency script..."
-        Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
-        InfoMessage "Dependency script downloaded successfully."
+        Download-And-VerifyFile -Url $WAZUH_SERVER_REPO_URL/scripts/windows/deps.ps1 -Destination $InstallerPath -ChecksumPattern "scripts/windows/deps.ps1" -FileName "deps.ps1" -ChecksumUrl "$WAZUH_SERVER_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Dependencies installed successfully"
     }
@@ -104,14 +100,12 @@ function Install-Dependencies {
 
 # Step 2: Download and execute Wazuh agent script with error handling
 function Install-WazuhAgent {
-    $InstallerURL = "$REPO_URL/scripts/install.ps1"
     $InstallerPath = "$env:TEMP\install.ps1"
     $global:InstallerFiles += $InstallerPath
 
     try {
         InfoMessage "Downloading and executing Wazuh agent script..."
-        Invoke-WebRequest -Uri $InstallerURL -OutFile $InstallerPath -ErrorAction Stop
-        InfoMessage "Wazuh agent script downloaded successfully."
+        Download-And-VerifyFile -Url "$WAZUH_SERVER_REPO_URL/scripts/windows/install.ps1" -Destination $InstallerPath -ChecksumPattern "scripts/windows/install.ps1" -FileName "install.ps1" -ChecksumUrl "$WAZUH_SERVER_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $InstallerPath -ErrorAction Stop
         SuccessMessage "Wazuh agent installed successfully"
     }
@@ -122,15 +116,14 @@ function Install-WazuhAgent {
 }
 
 function Install-OAuth2Client {
-    $OAuth2Url = "https://raw.githubusercontent.com/ADORSYS-GIS/wazuh-cert-oauth2/refs/tags/v$WOPS_VERSION/scripts/install.ps1"
     $OAuth2Script = "$env:TEMP\wazuh-cert-oauth2-client-install.ps1"
     $global:InstallerFiles += $OAuth2Script
 
     try {
         InfoMessage "Downloading and executing wazuh-cert-oauth2-client script..."
-        Invoke-WebRequest -Uri $OAuth2Url -OutFile $OAuth2Script -ErrorAction Stop
-        InfoMessage "wazuh-cert-oauth2-client script downloaded successfully."
+        Download-And-VerifyFile -Url "$WAZUH_CERT_OAUTH2_REPO_URL/scripts/windows/install.ps1" -Destination $OAuth2Script -ChecksumPattern "scripts/windows/install.ps1" -FileName "wazuh-cert-oauth2-client-install.ps1" -ChecksumUrl "$WAZUH_CERT_OAUTH2_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $OAuth2Script -ErrorAction Stop
+        SuccessMessage "wazuh-cert-oauth2-client installed successfully"
     }
     catch {
         ErrorMessage "Error during wazuh-cert-oauth2-client installation: $($_.Exception.Message)"
@@ -138,14 +131,12 @@ function Install-OAuth2Client {
 }
 
 function Install-SuricataClient {
-    $SuricataUrl = "$SuricataRepoUrl/scripts/install-suricata-silent.ps1"
     $SuricataScript = "$env:TEMP\install-suricata-silent.ps1"
     $global:InstallerFiles += $SuricataScript
 
     try {
         InfoMessage "Downloading and executing silent Suricata installation script..."
-        Invoke-WebRequest -Uri $SuricataUrl -OutFile $SuricataScript -ErrorAction Stop
-        InfoMessage "Silent Suricata script downloaded successfully."
+        Download-And-VerifyFile -Url "$WAZUH_SURICATA_REPO_URL/scripts/windows/install-suricata-silent.ps1" -Destination $SuricataScript -ChecksumPattern "scripts/windows/install-suricata-silent.ps1" -FileName "install-suricata-silent.ps1" -ChecksumUrl "$WAZUH_SURICATA_REPO_URL/checksums.sha256"
         & powershell.exe -ExecutionPolicy Bypass -File $SuricataScript -ErrorAction Stop
         SuccessMessage "Suricata installed successfully with automated silent installation"
     }
@@ -162,7 +153,7 @@ function DownloadVersionFile {
     }
     else {
         try {
-            Invoke-WebRequest -Uri $VERSION_FILE_URL -OutFile $VERSION_FILE_PATH -ErrorAction Stop
+            Download-And-VerifyFile -Url $VERSION_FILE_URL -Destination $VERSION_FILE_PATH -ChecksumPattern "version.txt" -FileName "version.txt"
             SuccessMessage "Version file downloaded successfully"
         } catch {
             ErrorMessage "Failed to download version file: $($_.Exception.Message)"
