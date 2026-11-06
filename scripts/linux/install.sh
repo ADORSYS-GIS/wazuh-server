@@ -66,7 +66,7 @@ if [ -f /etc/debian_version ]; then
     PACKAGE_MANAGER="apt"
     REPO_FILE="/etc/apt/sources.list.d/wazuh.list"
     GPG_KEYRING="/usr/share/keyrings/wazuh.gpg"
-    GPG_IMPORT_CMD="gpg --no-default-keyring --keyring $GPG_KEYRING --import"
+    GPG_IMPORT_CMD="gpg --no-default-keyring --keyring gnupg-ring:$GPG_KEYRING --import"
 elif [ -f /etc/redhat-release ]; then
     PACKAGE_MANAGER="yum"
     REPO_FILE="/etc/yum.repos.d/wazuh.repo"
@@ -94,7 +94,7 @@ import_keys() {
 
       if [ "$PACKAGE_MANAGER" = "apt" ]; then
           if [ ! -f $GPG_KEYRING ]; then
-              curl -s $GPG_KEY_URL | gpg --no-default-keyring --keyring $GPG_KEYRING --import && chmod 644 $GPG_KEYRING
+              curl -s $GPG_KEY_URL | gpg --no-default-keyring --keyring gnupg-ring:$GPG_KEYRING --import && chmod 644 $GPG_KEYRING
               info_message "GPG key imported successfully."
           fi
           if ! grep -q "wazuh" $REPO_FILE; then

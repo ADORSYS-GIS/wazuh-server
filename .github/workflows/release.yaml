@@ -15,12 +15,19 @@ on:
       - hotfix/**
 
 env:
+  WAZUH_SERVER_REPO_REF: ${{ github.head_ref || github.ref_name }}
+  WAZUH_YARA_REPO_REF: refs/tags/v0.4.2
+  WAZUH_SURICATA_REPO_REF: refs/tags/v0.2.2
+  WAZUH_TRIVY_REPO_REF: main
+  WAZUH_CERT_OAUTH2_REPO_REF: refs/tags/v0.4.3
+  WAZUH_SURICATA_VERSION: "0.2.2"
+  WAZUH_YARA_VERSION: "0.4.2"
+  WOPS_VERSION: "0.4.3"
   YARA_INSTALLATION_TYPE: server
   INSTALL_TRIVY: true
   INSTALL_CERT_OAUTH2: true
   INSTALL_SURICATA: true
   INSTALL_YARA: true
-  WOPS_VERSION: "0.4.2-rc.1"
   WAZUH_AGENT_STATUS_VERSION: "v0.4.2.rc1"
 
 jobs:
@@ -262,9 +269,33 @@ jobs:
         run: |
           echo "Debug: WAZUH_SERVER_REPO_REF is $WAZUH_SERVER_REPO_REF"
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            sudo -E ./scripts/linux/setup-server.sh
+            sudo env WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" \
+              WAZUH_YARA_REPO_REF="$WAZUH_YARA_REPO_REF" \
+              WAZUH_SURICATA_REPO_REF="$WAZUH_SURICATA_REPO_REF" \
+              WAZUH_TRIVY_REPO_REF="$WAZUH_TRIVY_REPO_REF" \
+              WAZUH_CERT_OAUTH2_REPO_REF="$WAZUH_CERT_OAUTH2_REPO_REF" \
+              WAZUH_SURICATA_VERSION="$WAZUH_SURICATA_VERSION" \
+              WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" \
+              WOPS_VERSION="$WOPS_VERSION" \
+              INSTALL_TRIVY="$INSTALL_TRIVY" \
+              INSTALL_CERT_OAUTH2="$INSTALL_CERT_OAUTH2" \
+              INSTALL_SURICATA="$INSTALL_SURICATA" \
+              INSTALL_YARA="$INSTALL_YARA" \
+              ./scripts/linux/setup-server.sh
           else
-            sudo -E ./scripts/macos/setup-server.sh
+            sudo env WAZUH_SERVER_REPO_REF="$WAZUH_SERVER_REPO_REF" \
+              WAZUH_YARA_REPO_REF="$WAZUH_YARA_REPO_REF" \
+              WAZUH_SURICATA_REPO_REF="$WAZUH_SURICATA_REPO_REF" \
+              WAZUH_TRIVY_REPO_REF="$WAZUH_TRIVY_REPO_REF" \
+              WAZUH_CERT_OAUTH2_REPO_REF="$WAZUH_CERT_OAUTH2_REPO_REF" \
+              WAZUH_SURICATA_VERSION="$WAZUH_SURICATA_VERSION" \
+              WAZUH_YARA_VERSION="$WAZUH_YARA_VERSION" \
+              WOPS_VERSION="$WOPS_VERSION" \
+              INSTALL_TRIVY="$INSTALL_TRIVY" \
+              INSTALL_CERT_OAUTH2="$INSTALL_CERT_OAUTH2" \
+              INSTALL_SURICATA="$INSTALL_SURICATA" \
+              INSTALL_YARA="$INSTALL_YARA" \
+              ./scripts/macos/setup-server.sh
           fi
 
   # ============================================

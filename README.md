@@ -1,6 +1,7 @@
 # Wazuh Server Endpoint Setup
 
 [![Release Client](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml/badge.svg?branch=main)](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/release.yaml)
+[![Dependabot Updates](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/ADORSYS-GIS/wazuh-server/actions/workflows/dependabot/dependabot-updates)
 
 
 
