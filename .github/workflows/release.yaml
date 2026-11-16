@@ -41,7 +41,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: "0"
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -130,7 +130,7 @@ jobs:
       is_prerelease: ${{ steps.check-prerelease.outputs.is_prerelease }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get tag name
         id: get-tag
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install ShellCheck
         run: sudo apt-get install -y shellcheck
@@ -217,7 +217,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
@@ -259,7 +259,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
@@ -319,7 +319,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Test dependencies script
         shell: pwsh
@@ -353,7 +353,7 @@ jobs:
     needs: [test-unix, test-windows, security]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Verify all scripts present
         run: |
@@ -412,7 +412,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Determine tag name
         id: tag
